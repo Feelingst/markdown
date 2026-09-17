@@ -10,11 +10,21 @@
   const meta = document.getElementById("result-meta");
   const downloadBtn = document.getElementById("download-btn");
   const copyBtn = document.getElementById("copy-btn");
+  const shareBtn = document.getElementById("share-btn");
   const againBtn = document.getElementById("again-btn");
   const uploadSection = document.getElementById("upload-section");
 
   let selectedFile = null;
   let lastMarkdown = "";
+  let lastFilename = "documento.md";
+
+  const canShareFiles =
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function";
+
+  if (canShareFiles || typeof navigator.share === "function") {
+    shareBtn.hidden = false;
+  }
 
   function setStatus(message, type = "") {
     status.textContent = message || "";
@@ -80,9 +90,6 @@
   surface.addEventListener("drop", (event) => {
     const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
     if (!file) return;
-    const transfer = new DataTransfer();
-    transfer.items.add(file);
-    input.files = transfer.files;
     showFile(file);
   });
 
@@ -110,6 +117,7 @@
       }
 
       lastMarkdown = payload.markdown || "";
+      lastFilename = payload.filename || "documento.md";
       preview.textContent = lastMarkdown;
       meta.textContent = `${payload.filename} · ${payload.stats.characters.toLocaleString("es")} caracteres · ~${payload.stats.approx_tokens.toLocaleString("es")} tokens`;
       downloadBtn.href = `/api/download/${payload.download_id}`;
@@ -133,7 +141,37 @@
         copyBtn.textContent = "Copiar";
       }, 1600);
     } catch (_error) {
-      setStatus("No se pudo copiar. Usa Descargar .md", "is-error");
+      // Fallback for older iOS Safari
+      const range = document.createRange();
+      range.selectNodeContents(preview);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      setStatus("Seleccionado. Mantén pulsado → Copiar.", "is-error");
+    }
+  });
+
+  shareBtn.addEventListener("click", async () => {
+    if (!lastMarkdown || typeof navigator.share !== "function") return;
+    const file = new File([lastMarkdown], lastFilename, {
+      type: "text/markdown",
+    });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: lastFilename,
+          text: "Markdown generado con Kernel",
+        });
+      } else {
+        await navigator.share({
+          title: lastFilename,
+          text: lastMarkdown.slice(0, 4000),
+        });
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+      setStatus("No se pudo compartir. Usa Copiar o Descargar.", "is-error");
     }
   });
 
@@ -143,6 +181,7 @@
     input.value = "";
     showFile(null);
     lastMarkdown = "";
+    lastFilename = "documento.md";
     preview.textContent = "";
     setStatus("");
     convertBtn.disabled = true;

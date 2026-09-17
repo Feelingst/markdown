@@ -26,12 +26,44 @@ def safe_stem(filename: str) -> str:
     return cleaned[:80] or "documento"
 
 
+ACCEPT_MIME = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".csv": "text/csv",
+    ".tsv": "text/tab-separated-values",
+    ".json": "application/json",
+    ".xml": "application/xml",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".yaml": "application/yaml",
+    ".yml": "application/yaml",
+    ".rtf": "application/rtf",
+}
+
+
+def build_accept() -> str:
+    parts: list[str] = []
+    for ext in supported_extensions():
+        parts.append(ext)
+        mime = ACCEPT_MIME.get(ext)
+        if mime and mime not in parts:
+            parts.append(mime)
+    return ",".join(parts)
+
+
 @app.get("/")
 def index():
     return render_template(
         "index.html",
         formats=supported_label(),
         extensions=",".join(supported_extensions()),
+        accept=build_accept(),
         max_mb=MAX_CONTENT_LENGTH // (1024 * 1024),
     )
 

@@ -2,10 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#0B1C24" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Kernel" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="description" content="Kernel convierte tus documentos a Markdown estructurado para usar menos tokens en plataformas de IA." />
   <title>Kernel — documentos a Markdown</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}" />
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -31,8 +37,7 @@
       <p class="brand-hero">Kernel</p>
       <h1>Menos tokens.<br />Más señal.</h1>
       <p class="lede">
-        Convierte PDF, Word, Excel, HTML y más en Markdown estructurado,
-        listo para pegar en ChatGPT, Claude u otras IAs.
+        Desde el iPhone: elige un PDF, Word, Excel u otro archivo y recibe Markdown limpio para ChatGPT, Claude u otras IAs.
       </p>
 
       <form id="convert-form" class="dropzone" enctype="multipart/form-data">
@@ -40,19 +45,23 @@
           id="file-input"
           type="file"
           name="file"
-          accept="{{ extensions }}"
+          accept="{{ accept }}"
           hidden
         />
-        <div class="dropzone-inner" id="drop-surface" tabindex="0" role="button" aria-controls="file-input" aria-label="Seleccionar o soltar archivo">
+        <div class="dropzone-inner" id="drop-surface" tabindex="0" role="button" aria-controls="file-input" aria-label="Elegir archivo">
           <span class="drop-pulse" aria-hidden="true"></span>
-          <p class="drop-title">Suelta tu archivo aquí</p>
-          <p class="drop-sub">o tócalo para elegir desde el teléfono o la computadora</p>
-          <span class="drop-cta">Elegir archivo</span>
+          <p class="drop-title">Toca para elegir un archivo</p>
+          <p class="drop-sub">Archivos, Descargas, iCloud Drive o tu correo</p>
+          <span class="drop-cta">Abrir archivos</span>
         </div>
         <p class="file-chip" id="file-chip" hidden></p>
         <button type="submit" class="primary" id="convert-btn" disabled>Convertir a Markdown</button>
         <p class="status" id="status" role="status" aria-live="polite"></p>
       </form>
+
+      <p class="iphone-tip">
+        Tip iPhone: en Safari → Compartir → <strong>Añadir a pantalla de inicio</strong> para usarlo como app.
+      </p>
     </section>
 
     <section class="result" id="result" hidden>
@@ -63,6 +72,7 @@
         </div>
         <div class="result-actions">
           <button type="button" class="ghost" id="copy-btn">Copiar</button>
+          <button type="button" class="ghost" id="share-btn" hidden>Compartir</button>
           <a class="primary link-btn" id="download-btn" href="#">Descargar .md</a>
         </div>
       </div>

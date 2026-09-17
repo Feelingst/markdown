@@ -32,6 +32,13 @@ body {
   background: var(--mist);
   line-height: 1.5;
   overflow-x: hidden;
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 .atmosphere {
@@ -387,7 +394,22 @@ main {
   max-width: 36rem;
 }
 
+.iphone-tip {
+  margin: 1.25rem 0 0;
+  max-width: 28rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.iphone-tip strong {
+  color: var(--ink);
+}
+
 @media (max-width: 640px) {
+  .top {
+    padding-top: max(0.85rem, env(safe-area-inset-top));
+  }
+
   .top-note {
     display: none;
   }
@@ -395,7 +417,27 @@ main {
   .hero {
     min-height: calc(100dvh - 4.2rem);
     justify-content: flex-start;
-    padding-top: 1.4rem;
+    padding-top: 1.1rem;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  }
+
+  .brand-hero {
+    font-size: clamp(3.2rem, 18vw, 5.2rem);
+  }
+
+  .dropzone-inner {
+    min-height: 9.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.35rem 1.15rem;
+  }
+
+  .primary,
+  .link-btn,
+  .ghost {
+    min-height: 3rem;
+    font-size: 1.02rem;
   }
 
   .result-actions {
@@ -405,7 +447,17 @@ main {
   .result-actions .primary,
   .result-actions .ghost,
   .result-actions .link-btn {
-    flex: 1 1 auto;
+    flex: 1 1 calc(50% - 0.4rem);
+  }
+
+  .preview {
+    max-height: 42vh;
+    font-size: 0.8rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .foot {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 }
 
