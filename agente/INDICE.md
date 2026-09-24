@@ -6,6 +6,8 @@ Las descripciones se toman tal cual del frontmatter de cada archivo (en inglés)
 - [Agentes](#agentes) (68)
 - [Skills](#skills) (292)
 
+Ver también [SKILLS_RECOMENDADAS.md](SKILLS_RECOMENDADAS.md): qué skills aplican a nuestros proyectos (Kernel y Jarvis).
+
 ## Agentes
 
 | Nombre | Descripción |
