@@ -13,7 +13,7 @@ from .text_formats import (
     from_xml,
     from_yaml,
 )
-from .utils import clean_markdown, heading, read_text_bytes, stem_title
+from .utils import check_zip_limits, clean_markdown, heading, read_text_bytes, stem_title
 
 HANDLERS = {
     ".txt": from_plain_text,
@@ -34,6 +34,8 @@ HANDLERS = {
     ".xlsx": from_xlsx,
     ".xlsm": from_xlsx,
 }
+
+ZIP_BASED = {".docx", ".pptx", ".xlsx", ".xlsm"}
 
 LABELS = {
     ".txt": "Texto",
@@ -88,4 +90,6 @@ def convert_file(data: bytes, filename: str) -> str:
             f"{text}\n"
         )
 
+    if ext in ZIP_BASED:
+        check_zip_limits(data)
     return clean_markdown(handler(data, filename))

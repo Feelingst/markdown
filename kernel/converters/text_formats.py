@@ -56,10 +56,11 @@ def from_csv(data: bytes, filename: str) -> str:
     text = read_text_bytes(data)
     reader = csv.reader(io.StringIO(text))
     rows = [list(row) for row in reader]
+    table = table_from_rows(rows) if rows else "_Archivo CSV vacío._\n"
     return clean_markdown(
         f"{heading(1, stem_title(filename))}"
         f"{heading(2, 'Tabla')}"
-        f"{table_from_rows(rows) if rows else '_Archivo CSV vacío._\n'}"
+        f"{table}"
     )
 
 

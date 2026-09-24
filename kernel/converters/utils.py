@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import io
 import re
+import zipfile
 from pathlib import Path
+
+# Los archivos Office (.docx, .pptx, .xlsx) son ZIP: uno de pocos KB puede
+# descomprimirse en gigas y agotar la memoria del servidor.
+MAX_ZIP_UNCOMPRESSED_BYTES = 150 * 1024 * 1024
+MAX_ZIP_MEMBERS = 5000
 
 
 def read_text_bytes(data: bytes) -> str:
@@ -56,3 +63,18 @@ def table_from_rows(rows: list[list[str]]) -> str:
 
 def stem_title(filename: str) -> str:
     return Path(filename).stem.replace("_", " ").replace("-", " ").strip() or "Documento"
+
+
+def check_zip_limits(data: bytes) -> None:
+    """Reject corrupt or oversized ZIP containers before parsing them."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            members = archive.infolist()
+    except zipfile.BadZipFile as exc:
+        raise ValueError("El archivo está dañado o no es un documento de Office válido.") from exc
+
+    if len(members) > MAX_ZIP_MEMBERS:
+        raise ValueError("El documento contiene demasiados elementos internos.")
+    if sum(member.file_size for member in members) > MAX_ZIP_UNCOMPRESSED_BYTES:
+        limit_mb = MAX_ZIP_UNCOMPRESSED_BYTES // (1024 * 1024)
+        raise ValueError(f"El documento ocupa más de {limit_mb} MB al descomprimirse.")
