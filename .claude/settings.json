@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/codex-task.sh:*)",
+      "Bash(./scripts/codex-task.sh:*)",
+      "Bash(codex exec:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)"
+    ]
+  }
+}
