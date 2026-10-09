@@ -1,0 +1,40 @@
+{
+  "_comment": "Límites duros del bot. bot.py los aplica siempre; Claude no puede saltárselos.",
+  "live_enabled": false,
+  "capital_inicial_eur": 100,
+  "max_posiciones": 2,
+  "max_compras_por_dia": 1,
+  "stop_loss_pct": 5.0,
+  "take_profit_pct": 5.0,
+  "kill_switch_eur": 80,
+  "dias_bloqueo_tras_perdida": 61,
+  "margen_fx_pct": 2.0,
+  "universo": {
+    "AAPL": "AAPL_US_EQ",
+    "MSFT": "MSFT_US_EQ",
+    "NVDA": "NVDA_US_EQ",
+    "AMZN": "AMZN_US_EQ",
+    "GOOGL": "GOOGL_US_EQ",
+    "META": "META_US_EQ",
+    "AVGO": "AVGO_US_EQ",
+    "AMD": "AMD_US_EQ",
+    "JPM": "JPM_US_EQ",
+    "V": "V_US_EQ",
+    "MA": "MA_US_EQ",
+    "COST": "COST_US_EQ",
+    "KO": "KO_US_EQ",
+    "PEP": "PEP_US_EQ",
+    "XOM": "XOM_US_EQ",
+    "UNH": "UNH_US_EQ",
+    "LLY": "LLY_US_EQ",
+    "WMT": "WMT_US_EQ",
+    "HD": "HD_US_EQ",
+    "NFLX": "NFLX_US_EQ"
+  },
+  "filtros": {
+    "atr_pct_min": 1.2,
+    "atr_pct_max": 4.0,
+    "rsi_min": 40,
+    "rsi_max": 62
+  }
+}
