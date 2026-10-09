@@ -19,6 +19,9 @@ Ejecuta desde `trading-bot/`.
      detente y explica al usuario qué falta. No inventes datos.
    - Entorno: `T212_ENV` (por defecto `demo`).
 
+1b. **Compras manuales**: `python3 bot.py adoptar` lista la cartera. Si hay posiciones que el usuario
+   compró a mano y quiere que el bot gestione, `python3 bot.py adoptar TICKER ...` (pregunta antes de adoptar).
+
 2. **Gestionar posiciones**: `python3 bot.py gestionar`
    (vende con +5 % / −5 % y asegura el stop en el bróker).
 

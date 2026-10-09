@@ -7,6 +7,7 @@ Subcomandos:
   escanear   Calcula señales del universo y devuelve candidatos ordenados.
   comprar T  Compra el símbolo T (p.ej. AAPL) respetando todos los límites.
   informe    Resumen de resultados del diario.
+  adoptar    Pone bajo gestión (SL/TP) posiciones compradas a mano.
 
 Variables de entorno:
   T212_API_KEY     (obligatoria)  clave de API de Trading 212
@@ -286,8 +287,41 @@ def check_buy_allowed(cfg: dict, st: dict, ticker: str, cash_free: float,
 
 
 def bot_positions(api: T212, cfg: dict, st: dict) -> list[dict]:
-    allowed = set(cfg["universo"].values())
-    return [p for p in api.portfolio() if p["ticker"] in allowed and p["ticker"] in st["abiertas"]]
+    return [p for p in api.portfolio() if p["ticker"] in st["abiertas"]]
+
+
+def cmd_adoptar(api: T212, cfg: dict, tickers: list[str]) -> list[str]:
+    """Registra en el diario posiciones abiertas a mano para que el bot las gestione (SL/TP).
+
+    Sin argumentos lista lo que hay en cartera y no adopta nada."""
+    st = journal_state(read_journal(), api.env)
+    portfolio = {p["ticker"]: p for p in api.portfolio()}
+    if not tickers:
+        return [f"{t}: {p['quantity']} @ {p['averagePrice']} (actual {p['currentPrice']})"
+                + (" [ya gestionada]" if t in st["abiertas"] else "")
+                for t, p in portfolio.items()] or ["Cartera vacía."]
+    fx = None
+    log = []
+    for t in tickers:
+        t = cfg["universo"].get(t.upper(), t)
+        p = portfolio.get(t)
+        if p is None:
+            log.append(f"{t}: no está en la cartera")
+            continue
+        if t in st["abiertas"]:
+            log.append(f"{t}: ya gestionada")
+            continue
+        if t.endswith("_US_EQ"):
+            fx = fx or eurusd()
+            coste = p["quantity"] * p["averagePrice"] / fx
+        else:
+            coste = p["quantity"] * p["averagePrice"]
+        sym = {v: k for k, v in cfg["universo"].items()}.get(t, t.split("_")[0])
+        append_journal(entorno=api.env, accion="COMPRA", simbolo=sym, ticker=t, cantidad=p["quantity"],
+                       precio=p["averagePrice"], coste_eur=round(coste, 2),
+                       motivo="Adoptada: compra manual del usuario")
+        log.append(f"{t}: adoptada ({p['quantity']} @ {p['averagePrice']}, ~{coste:.2f} €)")
+    return log
 
 
 def cmd_estado(api: T212, cfg: dict) -> dict:
@@ -433,6 +467,8 @@ def main() -> None:
     b.add_argument("simbolo")
     b.add_argument("--motivo", required=True, help="Justificación breve que queda en el diario")
     sub.add_parser("informe")
+    a = sub.add_parser("adoptar", help="Gestionar posiciones abiertas a mano (sin args: listar)")
+    a.add_argument("tickers", nargs="*")
     args = ap.parse_args()
     cfg = load_config()
 
@@ -445,6 +481,8 @@ def main() -> None:
             api = client_from_env(cfg)
             if args.cmd == "estado":
                 result = cmd_estado(api, cfg)
+            elif args.cmd == "adoptar":
+                result = cmd_adoptar(api, cfg, args.tickers)
             elif args.cmd == "gestionar":
                 result = cmd_gestionar(api, cfg)
             else:

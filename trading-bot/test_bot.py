@@ -146,5 +146,22 @@ class Manage(unittest.TestCase):
         self.assertEqual(app.call_args.kwargs["pnl_eur"], -2.5)
 
 
+class Adopt(unittest.TestCase):
+    def test_adopts_manual_position_then_manages_it(self):
+        api = FakeAPI([{"ticker": "SAN_EQ", "quantity": 10, "averagePrice": 5.0, "currentPrice": 5.3, "ppl": 3.0}])
+        rows = []
+        with mock.patch.object(bot, "read_journal", side_effect=lambda: list(rows)), \
+             mock.patch.object(bot, "append_journal",
+                               side_effect=lambda **kw: rows.append({"fecha": "2026-10-09T15:00:00Z",
+                                                                     "pnl_eur": "", **{k: str(v) for k, v in kw.items()}})), \
+             mock.patch.object(bot.time, "sleep"):
+            self.assertIn("adoptada", bot.cmd_adoptar(api, CFG, ["SAN_EQ"])[0])
+            self.assertEqual(rows[0]["coste_eur"], "50.0")
+            self.assertIn("ya gestionada", bot.cmd_adoptar(api, CFG, ["SAN_EQ"])[0])
+            bot.cmd_gestionar(api, CFG)  # +6 % -> take profit
+        self.assertIn(("market", "SAN_EQ", -10), api.calls)
+        self.assertEqual(rows[-1]["accion"], "VENTA_TP")
+
+
 if __name__ == "__main__":
     unittest.main()
