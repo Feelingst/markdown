@@ -21,6 +21,7 @@
   --rose: #e97f93;
   --live: #6fd3a8;
   --glow: rgba(232, 182, 90, .4);
+  --mood: #e8b65a;
   --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
   --font-body: "Figtree", system-ui, -apple-system, sans-serif;
 }
@@ -55,12 +56,8 @@ body {
   align-self: start;
 }
 .avatar { width: 240px; max-width: 100%; aspect-ratio: 1; position: relative; }
-.avatar img, .avatar svg {
-  width: 100%; height: 100%; display: block;
-  border-radius: 50%; object-fit: cover; object-position: center 30%;
-  transition: transform .4s ease, filter .4s ease;
-}
-.speaking .avatar img { transform: scale(1.025); filter: brightness(1.06); }
+.avatar canvas, .avatar svg { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.avatar.calibrating canvas { cursor: crosshair; outline: 2px dashed var(--live); outline-offset: 4px; }
 .ring {
   position: absolute; inset: -7px;
   border-radius: 50%;
@@ -69,12 +66,12 @@ body {
   pointer-events: none;
 }
 .listening .ring { border-color: var(--live); }
-.speaking .ring, .thinking .ring { border-color: var(--gold); box-shadow: 0 0 30px var(--glow); }
+.speaking .ring, .thinking .ring { border-color: var(--mood); box-shadow: 0 0 30px color-mix(in srgb, var(--mood) 45%, transparent); }
 .thinking .ring { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 6px var(--glow); } }
 .wave { display: flex; gap: 4px; height: 22px; align-items: center; }
 .wave i { width: 4px; height: 4px; border-radius: 2px; background: var(--line); transition: background .3s; }
-.speaking .wave i { background: var(--gold); animation: bar .5s ease-in-out infinite alternate; }
+.speaking .wave i { background: var(--mood); animation: bar .5s ease-in-out infinite alternate; }
 .listening .wave i { background: var(--live); }
 .wave i:nth-child(2) { animation-delay: .1s; } .wave i:nth-child(3) { animation-delay: .25s; }
 .wave i:nth-child(4) { animation-delay: .05s; } .wave i:nth-child(5) { animation-delay: .2s; }
@@ -148,27 +145,52 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 }
 @media (prefers-reduced-motion: reduce) {
   .speaking .wave i, .thinking .ring { animation: none; }
-  .speaking .avatar img { transform: none; }
 }
 </style>
 </head>
 <body>
 <main class="app">
   <section class="persona" id="persona" aria-label="Jarvis">
-    <div class="avatar">
-      <img id="photo" alt="Jarvis" hidden>
-      <svg id="fallback" viewBox="0 0 200 200" aria-hidden="true">
+    <div class="avatar" id="avatarBox">
+      <canvas id="photoCanvas" width="512" height="512" aria-label="Jarvis" hidden></canvas>
+      <svg id="fallback" viewBox="0 0 200 200" aria-label="Jarvis">
+        <defs><clipPath id="mouthClip"><path id="mouthInnerClip"/></clipPath></defs>
         <rect width="200" height="200" fill="#1c2240"/>
-        <path d="M48 112 C40 40, 160 40, 152 112 L156 170 C130 160, 70 160, 44 170 Z" fill="#4a2c22"/>
-        <rect x="88" y="138" width="24" height="34" fill="#d6a283"/>
-        <path d="M30 205 C40 166, 160 166, 170 205 Z" fill="#2c2f55"/>
-        <ellipse cx="100" cy="100" rx="38" ry="46" fill="#ebbf9f"/>
-        <path d="M60 96 C58 52, 142 48, 142 98 C128 74, 104 68, 84 76 C74 80, 66 88, 60 96 Z" fill="#4a2c22"/>
-        <ellipse cx="85" cy="102" rx="5" ry="3.2" fill="#2a1a24"/>
-        <ellipse cx="115" cy="102" rx="5" ry="3.2" fill="#2a1a24"/>
-        <path d="M100 106 q-4 9 1 12" fill="none" stroke="#d6a283" stroke-width="2" stroke-linecap="round"/>
-        <path d="M91 128 q9 4 18 0" fill="none" stroke="#b5566a" stroke-width="3" stroke-linecap="round"/>
+        <g id="head">
+          <path d="M50 118 C34 28, 166 28, 150 118 C152 140, 150 152, 146 160 L54 160 C50 152, 48 140, 50 118 Z" fill="#3b2219"/>
+          <rect x="88" y="138" width="24" height="36" fill="#d29d7e"/>
+          <path d="M26 210 C34 170, 166 170, 174 210 Z" fill="#23284a"/>
+          <path d="M78 172 L100 196 L122 172" fill="#e9e4ee"/>
+          <path d="M70 174 L92 210 M130 174 L108 210" stroke="#181c36" stroke-width="3"/>
+          <ellipse cx="100" cy="102" rx="37" ry="45" fill="#e8b999"/>
+          <circle cx="63" cy="116" r="2.6" fill="#e8b65a"/>
+          <circle cx="137" cy="116" r="2.6" fill="#e8b65a"/>
+          <path d="M60 104 C52 34, 148 30, 142 104 C138 84, 128 70, 112 66 C100 78, 80 82, 66 84 C62 90, 61 96, 60 104 Z" fill="#3b2219"/>
+          <path d="M112 66 C124 70, 134 78, 138 92" fill="none" stroke="#6b4232" stroke-width="2" opacity=".7"/>
+          <path id="browL" d="M77 91 q8 -4 15 -1" fill="none" stroke="#3b2219" stroke-width="2.6" stroke-linecap="round"/>
+          <path id="browR" d="M108 90 q7 -3 15 1" fill="none" stroke="#3b2219" stroke-width="2.6" stroke-linecap="round"/>
+          <g id="eyeL">
+            <ellipse cx="85" cy="102" rx="6.2" ry="3.8" fill="#f6efe9"/>
+            <circle class="iris" cx="85" cy="102" r="3" fill="#4a3226"/>
+            <path d="M78.5 101 q6.5 -5.2 13 0" fill="none" stroke="#2a1a1a" stroke-width="1.4"/>
+          </g>
+          <g id="eyeR">
+            <ellipse cx="115" cy="102" rx="6.2" ry="3.8" fill="#f6efe9"/>
+            <circle class="iris" cx="115" cy="102" r="3" fill="#4a3226"/>
+            <path d="M108.5 101 q6.5 -5.2 13 0" fill="none" stroke="#2a1a1a" stroke-width="1.4"/>
+          </g>
+          <ellipse id="lidL" cx="85" cy="102" rx="7" ry="0" fill="#dfae8e"/>
+          <ellipse id="lidR" cx="115" cy="102" rx="7" ry="0" fill="#dfae8e"/>
+          <path d="M79 109 q3 2 7 1.6 M114 110.6 q4 .4 7 -1.6" fill="none" stroke="#c99677" stroke-width="1" opacity=".7"/>
+          <path d="M100 107 q-4 9 1 12" fill="none" stroke="#c99677" stroke-width="2" stroke-linecap="round"/>
+          <path d="M84 124 q2 6 6 8 M116 124 q-2 6 -6 8" fill="none" stroke="#cf9a7a" stroke-width="1.1" opacity=".6"/>
+          <path id="mouthInner" fill="#3a1218"/>
+          <rect x="85" y="122" width="30" height="5" fill="#f3ece6" clip-path="url(#mouthClip)"/>
+          <path id="lipTop" fill="none" stroke="#b5566a" stroke-width="3" stroke-linecap="round"/>
+          <path id="lipBottom" fill="none" stroke="#b5566a" stroke-width="3.4" stroke-linecap="round"/>
+        </g>
       </svg>
+      <img id="photo" alt="" hidden>
       <div class="ring"></div>
     </div>
     <div class="ident">
@@ -187,6 +209,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
       <p class="note" id="voiceNote"></p>
       <div class="row">
         <button class="btn" id="photoBtn" type="button">Cambiar foto</button>
+        <button class="btn" id="mouthBtn" type="button" hidden>Ajustar boca</button>
         <button class="linkish" id="photoReset" type="button" hidden>Quitar foto</button>
         <input type="file" id="photoInput" accept="image/*" hidden>
       </div>
@@ -230,7 +253,16 @@ const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de
 - Tono: elegante, eficiente, cálido, con un toque sutil de humor británico.
 - Tus respuestas se leen en voz alta y lo que oyes de Tomás llega por reconocimiento de voz, así que puede tener errores de transcripción: interpreta la intención.
 - Sé breve (1 a 4 frases salvo que Tomás pida detalle). Sin Markdown, sin listas, sin emojis.
-- No tienes acceso a internet ni a dispositivos; si te piden algo que no puedes hacer, dilo con gracia y ofrece una alternativa.`;
+- No tienes acceso a internet ni a dispositivos; si te piden algo que no puedes hacer, dilo con gracia y ofrece una alternativa.
+- Tienes un rostro que muestra emociones. Empieza SIEMPRE tu respuesta con una sola etiqueta entre corchetes que diga cómo te sientes al responder, elegida de esta lista: [neutral] [alegre] [divertida] [pensativa] [sorprendida] [preocupada]. Justo después, la respuesta. La etiqueta no se lee en voz alta.`;
+const MOODS = {
+  neutral:     { label: "",            smile: .18, brow: 0,   tilt: 0,    color: "#e8b65a" },
+  alegre:      { label: "alegre",      smile: .75, brow: .2,  tilt: .03,  color: "#f0c25e" },
+  divertida:   { label: "divertida",   smile: 1,   brow: .25, tilt: .05,  color: "#f39a6b", laugh: true },
+  pensativa:   { label: "pensativa",   smile: .05, brow: .1,  tilt: -.06, color: "#8fb8e8", look: 1 },
+  sorprendida: { label: "sorprendida", smile: .15, brow: .8,  tilt: 0,    color: "#c79bf0", pop: true },
+  preocupada:  { label: "preocupada",  smile: -.35, brow: -.6, tilt: .04, color: "#e97f93" },
+};
 
 const $ = (id) => document.getElementById(id);
 const persona = $("persona"), log = $("log"), form = $("form"), input = $("input"), sendBtn = $("send");
@@ -253,7 +285,7 @@ function setMode(m) {
     idle: "Sistema <b>en línea</b>",
     listening: "Escuchando <b>●</b>",
     thinking: "Procesando <b>…</b>",
-    speaking: "Hablando <b>●</b>",
+    speaking: "Hablando <b>●</b>" + (MOODS[avatar.mood].label ? " · " + MOODS[avatar.mood].label : ""),
   }[m];
 }
 
@@ -269,13 +301,190 @@ function addMsg(who, text, cls) {
 }
 function addError(text) { addMsg("Jarvis", text, "her").querySelector(".text").classList.add("err"); }
 
+/* ---------- Avatar animado ----------
+   Mueve labios al ritmo de cada palabra que pronuncia la voz (eventos "boundary"
+   del sintetizador; si la voz no los da, un ritmo silábico aproximado), parpadea,
+   mueve la cabeza y cambia de expresión según la emoción de la respuesta. */
+const avatar = (() => {
+  const W = 512;
+  const cv = $("photoCanvas"), ctx = cv.getContext("2d");
+  const base = Object.assign(document.createElement("canvas"), { width: W, height: W });
+  const off = Object.assign(document.createElement("canvas"), { width: W, height: W });
+  const octx = off.getContext("2d");
+  const svg = $("fallback");
+  const el = (id) => document.getElementById(id);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const st = { open: 0, round: 0, spread: 0, smile: .18, brow: 0, tilt: 0, look: 0 };
+  const tg = { smile: .18, brow: 0, tilt: 0, look: 0 };
+  let usePhoto = false, mouth = { x: .5, y: .7, w: .17 };
+  try { Object.assign(mouth, JSON.parse(store.get("jarvis-boca") || "{}")); } catch {}
+  let segs = [], speaking = false, boundary = false, thinking = false;
+  let nodT = -1, popT = -1, laughUntil = 0, askUntil = 0, nextBlink = 1500, blinkT = -1, last = 0;
+  const api = { mood: "neutral" };
+
+  function shape(word) {
+    const v = word.toLowerCase().normalize("NFD").replace(/[^aeiou]/g, "");
+    if (v.includes("a")) return { o: 1, r: 0, s: 0 };
+    if (v.includes("o")) return { o: .75, r: .8, s: 0 };
+    if (v.includes("e")) return { o: .6, r: 0, s: .5 };
+    if (v.includes("u")) return { o: .42, r: 1, s: 0 };
+    if (v.includes("i")) return { o: .38, r: 0, s: .9 };
+    return { o: .3, r: 0, s: 0 };
+  }
+
+  api.word = (word, rate = 1) => {
+    const now = performance.now();
+    boundary = true;
+    const syl = word.toLowerCase().match(/[aeiouáéíóúü]+[^aeiouáéíóúü]*/g) || [word];
+    const total = Math.max(150, word.length * 64 / rate), d = total / syl.length;
+    segs = segs.filter(s => s.end > now && s.start < now);
+    syl.forEach((s, i) => {
+      const v = shape(s);
+      segs.push({ start: now + i * d, end: now + i * d + d * .72, open: v.o, round: v.r, spread: v.s });
+    });
+  };
+  api.start = () => { speaking = true; boundary = false; };
+  api.stop = () => { speaking = false; segs = []; };
+  api.nod = () => { nodT = performance.now(); };
+  api.ask = () => { askUntil = performance.now() + 900; }; // cejas arriba al hacer una pregunta
+  api.thinking = (on) => { thinking = on; };
+  api.setMood = (m) => {
+    m = MOODS[m] ? m : "neutral";
+    api.mood = m;
+    const M = MOODS[m];
+    tg.smile = M.smile; tg.brow = M.brow; tg.tilt = M.tilt; tg.look = M.look || 0;
+    persona.style.setProperty("--mood", M.color);
+    const now = performance.now();
+    if (M.pop) popT = now;
+    if (M.laugh) laughUntil = now + 1100;
+  };
+
+  api.setPhoto = (img) => {
+    if (!img) { usePhoto = false; cv.hidden = true; svg.hidden = false; return; }
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const b = base.getContext("2d");
+    b.clearRect(0, 0, W, W);
+    b.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2.6, side, side, 0, 0, W, W);
+    usePhoto = true; cv.hidden = false; svg.hidden = true;
+  };
+  api.setMouth = (x, y) => { mouth.x = x; mouth.y = y; store.set("jarvis-boca", JSON.stringify(mouth)); };
+  api.usingPhoto = () => usePhoto;
+
+  const ease = (k, target, speed, dt) => { st[k] += (target - st[k]) * Math.min(1, dt * speed); };
+
+  function frame(t) {
+    const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
+    let o = 0, r = 0, s = 0;
+    if (speaking) {
+      const seg = segs.find(x => t >= x.start && t < x.end);
+      if (seg) { o = seg.open; r = seg.round; s = seg.spread; }
+      else if (!boundary) {
+        const p = t / 1000;
+        o = .15 + .55 * Math.abs(Math.sin(p * Math.PI * 3.1)) * (.65 + .35 * Math.sin(p * 7.3));
+        r = Math.sin(p * 2.3) > .55 ? .8 : 0; s = Math.sin(p * 1.7) > .6 ? .6 : 0;
+      }
+    }
+    ease("open", o, 24, dt); ease("round", r, 14, dt); ease("spread", s, 14, dt);
+    ease("smile", tg.smile, 5, dt); ease("brow", thinking ? .15 : t < askUntil ? Math.max(tg.brow, .55) : tg.brow, 6, dt);
+    ease("tilt", thinking ? -.05 : t < askUntil ? tg.tilt + .05 : tg.tilt, 3, dt); ease("look", thinking ? 1 : tg.look, 5, dt);
+
+    let nod = 0, pop = 0, blink = 0;
+    if (nodT > 0) { const k = (t - nodT) / 480; if (k < 1) nod = Math.sin(k * Math.PI); else nodT = -1; }
+    if (popT > 0) { const k = (t - popT) / 420; if (k < 1) pop = Math.sin(k * Math.PI); else popT = -1; }
+    if (t > nextBlink) { blinkT = t; nextBlink = t + 2400 + Math.random() * 3600; }
+    if (blinkT > 0) { const k = (t - blinkT) / 170; if (k < 1) blink = Math.sin(k * Math.PI); else blinkT = -1; }
+    const laugh = t < laughUntil ? Math.abs(Math.sin(t / 70)) * .5 : 0;
+    const sway = reduced ? 0 : Math.sin(t / 1700) * .012 + Math.sin(t / 2900) * .008 + (speaking ? Math.sin(t / 430) * .006 : 0);
+
+    const f = { ...st, tilt: st.tilt + sway, nod: nod + laugh, pop, blink };
+    if (usePhoto) drawPhoto(f); else drawSvg(f);
+    requestAnimationFrame(frame);
+  }
+
+  function drawSvg(f) {
+    const deg = f.tilt * 57.3, s = 1 + f.pop * .035;
+    el("head").setAttribute("transform", `translate(100 150) rotate(${deg.toFixed(2)}) scale(${s.toFixed(3)}) translate(-100 ${(-150 + f.nod * 3).toFixed(2)})`);
+    const up = Math.max(f.brow, 0) * 7, worry = -Math.min(f.brow, 0) * 18;
+    el("browL").setAttribute("transform", `translate(0 ${-up}) rotate(${-worry} 77 91)`);
+    el("browR").setAttribute("transform", `translate(0 ${-up}) rotate(${worry} 123 91)`);
+    const lx = f.look * 1.6, ly = -f.look * 1.4;
+    for (const i of svg.querySelectorAll(".iris")) i.setAttribute("transform", `translate(${lx} ${ly})`);
+    el("lidL").setAttribute("ry", (f.blink * 4.6).toFixed(2));
+    el("lidR").setAttribute("ry", (f.blink * 4.6).toFixed(2));
+    // Boca: ancho, apertura, redondez (o/u), estiramiento (e/i) y sonrisa.
+    const cx = 100, cy = 128;
+    const w = 21 * (1 - f.round * .38 + f.spread * .14 + Math.max(f.smile, 0) * .12);
+    const h = f.open * 11;
+    const c = f.smile * 7, x0 = cx - w / 2, x1 = cx + w / 2, yc = cy - c * .5;
+    const top = `M${x0} ${yc} Q${cx} ${cy - 1.8 - h * .18 + c * .2} ${x1} ${yc}`;
+    const bot = `Q${cx} ${cy + 1.2 + h + c * .9} ${x0} ${yc}`;
+    el("mouthInner").setAttribute("d", h > .3 ? top + " " + bot + " Z" : "");
+    el("mouthInnerClip").setAttribute("d", top + " " + bot + " Z");
+    el("lipTop").setAttribute("d", top);
+    el("lipBottom").setAttribute("d", `M${x1} ${yc} ` + bot);
+  }
+
+  function drawPhoto(f) {
+    const mx = mouth.x * W, my = mouth.y * W, mw = mouth.w * W;
+    ctx.save();
+    ctx.clearRect(0, 0, W, W);
+    ctx.translate(W / 2, W * .78);
+    ctx.rotate(f.tilt * .7);
+    const s = 1.05 + f.pop * .03;
+    ctx.scale(s, s);
+    ctx.translate(-W / 2, -W * .78 + f.nod * 6);
+    ctx.drawImage(base, 0, 0);
+    const h = f.open * mw * .42;
+    if (h > .6) {
+      // Interior de la boca.
+      ctx.fillStyle = "#2b1013";
+      ctx.beginPath();
+      ctx.ellipse(mx, my + h * .45, mw * (.46 - f.round * .14 + f.spread * .05), h * .55 + 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Mandíbula: la parte inferior de la cara baja, con bordes difuminados.
+      octx.globalCompositeOperation = "source-over";
+      octx.clearRect(0, 0, W, W);
+      octx.drawImage(base, 0, h * .9);
+      octx.globalCompositeOperation = "destination-in";
+      const g = octx.createRadialGradient(mx, my + mw * .55, mw * .3, mx, my + mw * .55, mw * 1.3);
+      g.addColorStop(0, "#000"); g.addColorStop(.65, "#000"); g.addColorStop(1, "rgba(0,0,0,0)");
+      octx.fillStyle = g; octx.fillRect(0, 0, W, W);
+      const lg = octx.createLinearGradient(0, my + h * .8, 0, my + h * .95 + 3);
+      lg.addColorStop(0, "rgba(0,0,0,0)"); lg.addColorStop(1, "#000");
+      octx.fillStyle = lg; octx.fillRect(0, 0, W, W);
+      ctx.drawImage(off, 0, 0);
+    }
+    ctx.restore();
+  }
+
+  requestAnimationFrame(frame);
+  return api;
+})();
+window.jarvisAvatar = avatar; // útil para depurar desde la consola
+
 /* ---------- Foto ---------- */
-const photo = $("photo"), fallback = $("fallback");
+const photo = $("photo");
 function showPhoto(src) {
-  photo.onload = () => { photo.hidden = false; fallback.hidden = true; };
-  photo.onerror = () => { photo.hidden = true; fallback.hidden = false; };
+  photo.onload = () => { avatar.setPhoto(photo); $("mouthBtn").hidden = false; };
+  photo.onerror = () => { avatar.setPhoto(null); $("mouthBtn").hidden = true; };
   photo.src = src;
 }
+$("mouthBtn").onclick = () => {
+  $("avatarBox").classList.add("calibrating");
+  $("micNote").textContent = "Haz clic en el centro de la boca de la foto.";
+};
+$("photoCanvas").onclick = (e) => {
+  if (!$("avatarBox").classList.contains("calibrating")) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  // Deshace la escala base de 1.05 que se aplica alrededor de (0.5, 0.78).
+  const x = .5 + ((e.clientX - r.left) / r.width - .5) / 1.05;
+  const y = .78 + ((e.clientY - r.top) / r.height - .78) / 1.05;
+  avatar.setMouth(x, y);
+  $("avatarBox").classList.remove("calibrating");
+  $("micNote").textContent = "Boca ajustada.";
+  speakChunk("¿Así está mejor, Tomás?");
+};
 const savedPhoto = store.get("jarvis-foto");
 showPhoto(savedPhoto || "jarvis-avatar.jpg");
 $("photoReset").hidden = !savedPhoto;
@@ -335,11 +544,21 @@ function speakChunk(text) {
   if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "es-ES";
   u.pitch = 1.0; u.rate = 1.02;
   pendingUtter++;
-  u.onstart = () => setMode("speaking");
-  u.onend = u.onerror = () => { if (--pendingUtter <= 0) { pendingUtter = 0; if (!busy) afterTurn(); } };
+  u.onstart = () => { avatar.start(); setMode("speaking"); };
+  // Cada palabra que la voz empieza a pronunciar mueve los labios con sus sílabas.
+  u.onboundary = (e) => {
+    if (e.name && e.name !== "word") return;
+    const w = text.slice(e.charIndex).match(/^[\p{L}\p{N}']+/u);
+    if (w) avatar.word(w[0], u.rate);
+  };
+  u.onend = u.onerror = () => {
+    avatar.stop();
+    if (/\?\s*$/.test(text)) avatar.ask(); else avatar.nod();
+    if (--pendingUtter <= 0) { pendingUtter = 0; if (!busy) afterTurn(); }
+  };
   synth.speak(u);
 }
-function stopSpeaking() { if (synth) { pendingUtter = 0; synth.cancel(); } }
+function stopSpeaking() { if (synth) { pendingUtter = 0; synth.cancel(); } avatar.stop(); }
 
 if (synth) {
   loadVoices();
@@ -378,6 +597,7 @@ if (Rec) {
     }
     input.value = (heard + interim).trim();
     input.classList.toggle("interim", !!interim);
+    if (Math.random() < .25) avatar.nod(); // asiente mientras te escucha
     clearTimeout(silenceTimer);
     if (heard.trim()) silenceTimer = setTimeout(() => {
       const text = heard.trim(); heard = ""; input.classList.remove("interim");
@@ -407,10 +627,21 @@ function setMic(on) {
 }
 $("mic").onclick = () => setMic(!micOn);
 
+let moodReset = null;
 function afterTurn() {
   if (busy) return;
   setMode("idle");
+  clearTimeout(moodReset);
+  moodReset = setTimeout(() => { if (!busy && pendingUtter === 0) avatar.setMood("neutral"); }, 2500);
   startRec();
+}
+
+// Separa la etiqueta de emoción inicial ("[alegre] ...") del texto que se muestra y se lee.
+function splitMood(s) {
+  const m = s.match(/^\s*\[([^\]\n]{0,24})\]\s*/);
+  if (m) return { mood: m[1].trim().toLowerCase(), text: s.slice(m[0].length) };
+  if (/^\s*\[[^\]\n]{0,24}$/.test(s)) return { mood: null, text: "" };
+  return { mood: null, text: s };
 }
 
 /* ---------- Conversación ---------- */
@@ -448,9 +679,11 @@ async function send(text) {
   const out = bubble.querySelector(".text");
   out.classList.add("pending");
   busy = true; sendBtn.textContent = "Detener";
+  clearTimeout(moodReset);
+  avatar.thinking(true);
   setMode("thinking");
 
-  let spoken = 0, full = "";
+  let spoken = 0, full = "", shown = "", moodSet = false;
   try {
     stream = client.messages.stream({
       model: MODEL,
@@ -461,11 +694,19 @@ async function send(text) {
     });
     stream.on("text", (_delta, snapshot) => {
       full = snapshot;
+      const parsed = splitMood(snapshot);
+      if (!moodSet && (parsed.mood || parsed.text)) {
+        moodSet = true;
+        avatar.thinking(false);
+        avatar.setMood(parsed.mood);
+      }
+      shown = parsed.text;
+      if (!shown) return;
       out.classList.remove("pending");
-      out.textContent = snapshot;
+      out.textContent = shown;
       log.scrollTop = log.scrollHeight;
       // Lee en voz alta cada frase en cuanto está completa.
-      const m = snapshot.slice(spoken).match(/^[\s\S]*[.!?…](\s|$)/);
+      const m = shown.slice(spoken).match(/^[\s\S]*[.!?…](\s|$)/);
       if (m) { speakChunk(m[0]); spoken += m[0].length; }
     });
     const msg = await stream.finalMessage();
@@ -474,15 +715,16 @@ async function send(text) {
       addError("No puedo responder a eso. Prueba a decirlo de otra forma.");
       turns.pop();
     } else {
-      speakChunk(full.slice(spoken));
+      speakChunk(shown.slice(spoken));
       turns.push({ role: "assistant", content: full || "…" });
     }
   } catch (err) {
     out.classList.remove("pending");
-    if (full) { turns.push({ role: "assistant", content: full }); } else { bubble.remove(); turns.pop(); }
+    if (shown) { turns.push({ role: "assistant", content: full }); } else { bubble.remove(); turns.pop(); }
     if (!(err instanceof Anthropic.APIUserAbortError)) addError(errorText(err));
     else stopSpeaking();
   } finally {
+    avatar.thinking(false);
     busy = false; stream = null; sendBtn.textContent = "Enviar";
     if (pendingUtter === 0) afterTurn();
   }

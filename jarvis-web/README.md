@@ -17,12 +17,21 @@ python3 -m http.server 8000
 # y abre http://localhost:8000
 ```
 
-## La foto del avatar
+## El avatar
+
+Mientras Jarvis habla, el avatar reacciona a lo que dice:
+
+- **Labios sincronizados con la voz.** Cada palabra que pronuncia la voz mueve la boca según sus vocales (la "a" abre más, la "o" y la "u" redondean, la "e" y la "i" estiran). Si tu voz no avisa de cada palabra, usa un ritmo silábico aproximado.
+- **Emociones.** Claude etiqueta cada respuesta (alegre, divertida, pensativa, sorprendida, preocupada o neutral) y el avatar cambia de expresión (sonrisa, cejas, inclinación de cabeza, risa) y de color del aro.
+- **Gestos.** Parpadea, asiente al terminar una frase, levanta las cejas al preguntar, mira hacia arriba mientras piensa y asiente de vez en cuando mientras te escucha.
+
+### Foto real
 
 - Guarda una foto como `jarvis-avatar.jpg` dentro de la carpeta y aparecerá sola, o
 - pulsa **Cambiar foto** y elige una imagen (se recorta en círculo y se guarda en el navegador).
+- Pulsa **Ajustar boca** y haz clic en el centro de su boca para que la mandíbula se mueva en el sitio correcto.
 
-Sin foto se muestra un retrato ilustrado.
+Con foto, el avatar abre la boca, mueve la cabeza y cambia el color del aro, pero no cambia la sonrisa ni las cejas: eso solo lo hace el retrato ilustrado. Funciona mejor con una foto de frente, con la boca cerrada y la cara centrada.
 
 ## Detalles
 
