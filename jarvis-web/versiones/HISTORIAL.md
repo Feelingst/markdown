@@ -6,6 +6,11 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.7.2 · 2026-10-10 · Aviso de saldo
+ENLACE_PENDIENTE
+
+- Si la cuenta de API de Anthropic se queda sin saldo, lo explica en español y dice dónde añadir créditos.
+
 ## v0.7.1 · 2026-10-10 · Arreglos del micrófono
 [Descargar](https://github.com/Feelingst/markdown/archive/d4831a45f68f3cffcf496b53dd309eedcadbc121.zip) · [ver código](https://github.com/Feelingst/markdown/tree/d4831a45f68f3cffcf496b53dd309eedcadbc121) · commit `d4831a4`
 

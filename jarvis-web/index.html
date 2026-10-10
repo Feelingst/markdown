@@ -273,7 +273,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.7.1";
+const VERSION = "0.7.2";
 const MODEL = "claude-sonnet-5";
 const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de Tomás, inspirada en el Jarvis de Tony Stark, con personalidad femenina: una mujer de unos 40 años, segura y serena.
 - Habla siempre en español, en femenino cuando te refieras a ti misma.
@@ -963,6 +963,7 @@ function errorText(err) {
   if (err instanceof Anthropic.AuthenticationError) return "La clave de API no es válida. Pulsa \"Cambiar clave de API\" y pega una nueva.";
   if (err instanceof Anthropic.PermissionDeniedError) return "Esta clave no tiene permiso para usar el modelo.";
   if (err instanceof Anthropic.RateLimitError) return "Demasiadas peticiones seguidas o sin saldo en la cuenta de API. Espera un momento.";
+  if (/credit balance/i.test(err?.message || "")) return "Tu cuenta de API de Anthropic no tiene saldo. Añade créditos en console.anthropic.com → Plans & Billing. El saldo de la API es aparte de tu suscripción de Claude.";
   if (err instanceof Anthropic.BadRequestError) return "Claude ha rechazado la petición: " + (err.error?.error?.message || err.message);
   if (err instanceof Anthropic.APIConnectionError) return "No hay conexión con Claude. Revisa tu internet.";
   if (err instanceof Anthropic.APIError) return "Claude no está disponible ahora mismo. Vuelve a intentarlo en un momento.";
