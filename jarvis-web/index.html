@@ -219,13 +219,20 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 
   <section class="chat" aria-label="Conversación">
     <form class="setup" id="setup" hidden>
-      <h2>Conecta a Jarvis con Claude</h2>
+      <h2>Ajustes de Jarvis</h2>
       <label for="key">Clave de API de Anthropic</label>
+      <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
+      <p class="note" id="keyNote">Créala en console.anthropic.com → API Keys.</p>
+      <label for="elKey">Clave de API de ElevenLabs (opcional)</label>
+      <input type="password" id="elKey" placeholder="sk_…" autocomplete="off">
+      <label for="elVoice">ID de la voz de ElevenLabs</label>
+      <input type="text" id="elVoice" placeholder="p. ej. 21m00Tcm4TlvDq8ikWAM" autocomplete="off" spellcheck="false">
+      <p class="note" id="elNote">El ID está en ElevenLabs → Voices → tu voz → "Copy voice ID". Sin ElevenLabs se usa la voz del navegador.</p>
       <div class="row">
-        <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
         <button class="btn" type="submit">Guardar</button>
+        <button class="linkish" type="button" id="elClear">Quitar ElevenLabs</button>
       </div>
-      <p class="note">Créala en console.anthropic.com → API Keys. Se guarda solo en este navegador y se envía únicamente a api.anthropic.com.</p>
+      <p class="note">Las claves se guardan solo en este navegador y se envían únicamente a api.anthropic.com y api.elevenlabs.io.</p>
     </form>
     <div class="log" id="log" aria-live="polite">
       <div class="msg her">
@@ -345,6 +352,10 @@ const avatar = (() => {
     });
   };
   api.start = () => { speaking = true; boundary = false; };
+  // Posturas de boca con tiempos absolutos (voz con marcas de tiempo, p. ej. ElevenLabs).
+  api.schedule = (list) => { boundary = true; const now = performance.now(); segs = segs.filter(x => x.end > now).concat(list); };
+  api.shape = (txt) => shape(txt);
+  api.level = null; // función 0..1 con el volumen real del audio, si lo hay
   api.stop = () => { speaking = false; segs = []; };
   api.nod = () => { nodT = performance.now(); };
   api.ask = () => { askUntil = performance.now() + 900; }; // cejas arriba al hacer una pregunta
@@ -378,7 +389,9 @@ const avatar = (() => {
     let o = 0, r = 0, s = 0;
     if (speaking) {
       const seg = segs.find(x => t >= x.start && t < x.end);
-      if (seg) { o = seg.open; r = seg.round; s = seg.spread; }
+      const lv = api.level ? api.level() : null;
+      if (seg) { o = seg.open * (lv == null ? 1 : Math.min(1.15, .7 + lv * .6)); r = seg.round; s = seg.spread; }
+      else if (lv != null && boundary) o = lv * .35;
       else if (!boundary) {
         const p = t / 1000;
         o = .15 + .55 * Math.abs(Math.sin(p * Math.PI * 3.1)) * (.65 + .35 * Math.sin(p * 7.3));
@@ -507,16 +520,27 @@ $("photoReset").onclick = () => { store.set("jarvis-foto", null); $("photoReset"
 function connect(key) { client = key ? new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }) : null; }
 connect(store.get("jarvis-key"));
 $("setup").hidden = !!client;
-$("keyBtn").onclick = () => { $("setup").hidden = false; $("key").focus(); };
+function paintSetup() {
+  $("keyNote").textContent = client ? "Clave guardada. Escribe otra solo si quieres cambiarla." : "Créala en console.anthropic.com → API Keys.";
+  $("elVoice").value = store.get("jarvis-el-voice") || "";
+  $("elClear").hidden = !store.get("jarvis-el-key");
+  $("elKey").placeholder = store.get("jarvis-el-key") ? "Clave guardada" : "sk_…";
+}
+paintSetup();
+$("keyBtn").onclick = () => { paintSetup(); $("setup").hidden = false; $("key").focus(); };
 $("setup").onsubmit = (e) => {
   e.preventDefault();
-  const key = $("key").value.trim();
-  if (!key) return;
-  store.set("jarvis-key", key);
-  connect(key);
-  $("key").value = "";
+  const key = $("key").value.trim(), elKey = $("elKey").value.trim(), elVoice = $("elVoice").value.trim();
+  if (key) { store.set("jarvis-key", key); connect(key); }
+  if (elKey) store.set("jarvis-el-key", elKey);
+  store.set("jarvis-el-voice", elVoice || null);
+  $("key").value = ""; $("elKey").value = "";
+  paintSetup();
+  if (!client) { $("key").focus(); return; }
   $("setup").hidden = true;
+  paintVoiceMode();
 };
+$("elClear").onclick = () => { store.set("jarvis-el-key", null); store.set("jarvis-el-voice", null); paintSetup(); paintVoiceMode(); };
 
 /* ---------- Voz de Jarvis ---------- */
 const synth = window.speechSynthesis;
@@ -535,43 +559,173 @@ function loadVoices() {
   $("voiceNote").textContent = !voices.length
     ? (all.length ? "Tu navegador no tiene voces en español." : "Cargando voces…")
     : (FEMALE.test(sel.value) ? "" : "Si la voz suena masculina, elige otra en la lista.");
+  if (eleven.ready()) $("voiceNote").textContent = "Voz de ElevenLabs activa.";
 }
 function speakChunk(text) {
   text = text.trim();
-  if (!synth || muted || !text) return;
+  if (muted || !text) return;
+  if (eleven.ready()) eleven.say(text); else speakBrowser(text);
+}
+function finishChunk(text) {
+  avatar.stop();
+  if (/\?\s*$/.test(text)) avatar.ask(); else avatar.nod();
+  if (--pendingUtter <= 0) { pendingUtter = 0; if (!busy) afterTurn(); }
+}
+
+/* Voz de ElevenLabs: pide cada frase con marcas de tiempo por letra, la reproduce
+   en orden y programa la boca del avatar con esos tiempos (sincronía real). */
+const eleven = (() => {
+  const MODEL_ID = "eleven_flash_v2_5"; // multilingüe y de baja latencia
+  let ac = null, analyser = null, levelBuf = null, chain = Promise.resolve(), source = null, gen = 0, ctls = [];
+  const key = () => store.get("jarvis-el-key"), voice = () => store.get("jarvis-el-voice");
+
+  function audio() {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = ac.createAnalyser(); analyser.fftSize = 512;
+      levelBuf = new Uint8Array(analyser.fftSize);
+      analyser.connect(ac.destination);
+    }
+    if (ac.state === "suspended") ac.resume();
+    return ac;
+  }
+  function level() {
+    if (!analyser) return 0;
+    analyser.getByteTimeDomainData(levelBuf);
+    let sum = 0;
+    for (const v of levelBuf) sum += (v - 128) * (v - 128);
+    return Math.min(1, Math.sqrt(sum / levelBuf.length) / 40);
+  }
+
+  async function fetchChunk(text, signal) {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice())}/with-timestamps?output_format=mp3_44100_128`, {
+      method: "POST",
+      signal,
+      headers: { "xi-api-key": key(), "Content-Type": "application/json" },
+      body: JSON.stringify({ text, model_id: MODEL_ID, language_code: "es" }),
+    });
+    if (!res.ok) {
+      const err = new Error("http " + res.status); err.status = res.status;
+      try { err.detail = (await res.json())?.detail; } catch {}
+      throw err;
+    }
+    const data = await res.json();
+    const bytes = Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0));
+    const buffer = await audio().decodeAudioData(bytes.buffer);
+    return { buffer, align: data.alignment || data.normalized_alignment || null };
+  }
+
+  // Convierte la alineación por letra en posturas de boca con tiempos absolutos.
+  function visemes(align, t0) {
+    if (!align) return [];
+    const chars = align.characters || align.chars || [];
+    const st = align.character_start_times_seconds || align.charStartTimesMs?.map(x => x / 1000) || [];
+    const en = align.character_end_times_seconds || align.charDurationsMs?.map((d, i) => st[i] + d / 1000) || [];
+    const out = [];
+    chars.forEach((c, i) => {
+      if (!/[aeiouáéíóúü]/i.test(c) || st[i] == null) return;
+      const v = avatar.shape(c);
+      const start = t0 + st[i] * 1000, end = t0 + Math.max(en[i] ?? st[i] + .08, st[i] + .06) * 1000;
+      out.push({ start, end, open: v.o, round: v.r, spread: v.s });
+    });
+    return out;
+  }
+
+  function play({ buffer, align }, text, myGen) {
+    return new Promise((resolve) => {
+      if (myGen !== gen) return resolve();
+      const src = audio().createBufferSource();
+      src.buffer = buffer;
+      src.connect(analyser);
+      source = src;
+      const t0 = performance.now() + 30;
+      avatar.start();
+      avatar.level = level;
+      avatar.schedule(visemes(align, t0));
+      setMode("speaking");
+      src.onended = () => { if (source === src) source = null; resolve(); };
+      src.start(ac.currentTime + .03);
+    });
+  }
+
+  return {
+    ready: () => !!(key() && voice()),
+    level,
+    unlock: () => { if (key() && voice()) audio(); },
+    say(text) {
+      pendingUtter++;
+      const myGen = gen, ctl = new AbortController();
+      ctls.push(ctl);
+      const job = fetchChunk(text, ctl.signal); // se pide ya, mientras suena la frase anterior
+      chain = chain.then(async () => {
+        try {
+          const clip = await job;
+          await play(clip, text, myGen);
+          if (myGen === gen) finishChunk(text);
+        } catch (err) {
+          if (myGen !== gen || err.name === "AbortError") return;
+          pendingUtter--;
+          const msg = err.status === 401 ? "La clave de ElevenLabs no es válida."
+            : err.status === 404 || err.status === 400 ? "ElevenLabs no encuentra esa voz. Revisa el ID de la voz."
+            : err.status === 429 ? "ElevenLabs: límite de uso alcanzado."
+            : err.status ? `ElevenLabs ha fallado (${err.status}).`
+            : "No he podido conectar con ElevenLabs.";
+          $("voiceNote").textContent = msg + " Uso la voz del navegador.";
+          speakBrowser(text);
+        }
+      });
+    },
+    stop() {
+      gen++;
+      for (const c of ctls) c.abort();
+      ctls = [];
+      if (source) { try { source.stop(); } catch {} source = null; }
+      chain = Promise.resolve();
+    },
+  };
+})();
+
+function paintVoiceMode() {
+  const on = eleven.ready();
+  $("voz").hidden = on || !synth;
+  if (on) $("voiceNote").textContent = "Voz de ElevenLabs activa.";
+  else if (synth) loadVoices();
+}
+
+function speakBrowser(text) {
+  if (!synth) return;
   const u = new SpeechSynthesisUtterance(text);
   const voice = voices.find(v => v.name === $("voz").value);
   if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "es-ES";
   u.pitch = 1.0; u.rate = 1.02;
   pendingUtter++;
-  u.onstart = () => { avatar.start(); setMode("speaking"); };
+  u.onstart = () => { avatar.level = null; avatar.start(); setMode("speaking"); };
   // Cada palabra que la voz empieza a pronunciar mueve los labios con sus sílabas.
   u.onboundary = (e) => {
     if (e.name && e.name !== "word") return;
     const w = text.slice(e.charIndex).match(/^[\p{L}\p{N}']+/u);
     if (w) avatar.word(w[0], u.rate);
   };
-  u.onend = u.onerror = () => {
-    avatar.stop();
-    if (/\?\s*$/.test(text)) avatar.ask(); else avatar.nod();
-    if (--pendingUtter <= 0) { pendingUtter = 0; if (!busy) afterTurn(); }
-  };
+  u.onend = u.onerror = () => finishChunk(text);
   synth.speak(u);
 }
-function stopSpeaking() { if (synth) { pendingUtter = 0; synth.cancel(); } avatar.stop(); }
+function stopSpeaking() { pendingUtter = 0; eleven.stop(); if (synth) synth.cancel(); avatar.stop(); }
 
 if (synth) {
   loadVoices();
   synth.onvoiceschanged = loadVoices;
   $("voz").onchange = () => { store.set("jarvis-voz", $("voz").value); $("voiceNote").textContent = ""; stopSpeaking(); speakChunk("Hola, Tomás. ¿Te gusta cómo sueno ahora?"); };
+} else {
+  $("voz").hidden = true;
+  $("voiceNote").textContent = "Este navegador no puede leer en voz alta.";
+}
+{
   const muteBtn = $("mute");
   const paint = () => { muteBtn.setAttribute("aria-pressed", String(!muted)); muteBtn.textContent = muted ? "Voz apagada" : "Voz activada"; };
   paint();
-  muteBtn.onclick = () => { muted = !muted; store.set("jarvis-mute", muted ? "1" : "0"); if (muted) { stopSpeaking(); afterTurn(); } paint(); };
-} else {
-  $("voz").closest(".row").hidden = true;
-  $("voiceNote").textContent = "Este navegador no puede leer en voz alta.";
+  muteBtn.onclick = () => { muted = !muted; store.set("jarvis-mute", muted ? "1" : "0"); if (muted) { stopSpeaking(); afterTurn(); } else eleven.unlock(); paint(); };
 }
+paintVoiceMode();
 
 /* ---------- Micrófono continuo ---------- */
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -623,7 +777,7 @@ function setMic(on) {
   const b = $("mic");
   b.setAttribute("aria-pressed", String(on));
   b.textContent = on ? "Micrófono abierto · pulsa para silenciar" : "Activar micrófono";
-  if (on) { $("micNote").textContent = ""; startRec(); } else { stopRec(); heard = ""; if (mode === "listening") setMode("idle"); }
+  if (on) { $("micNote").textContent = ""; eleven.unlock(); startRec(); } else { stopRec(); heard = ""; if (mode === "listening") setMode("idle"); }
 }
 $("mic").onclick = () => setMic(!micOn);
 
@@ -649,6 +803,7 @@ input.addEventListener("input", () => { input.style.height = "auto"; input.style
 input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
 form.onsubmit = (e) => {
   e.preventDefault();
+  eleven.unlock();
   if (busy) { stream?.abort(); return; }
   const text = input.value.trim();
   heard = ""; clearTimeout(silenceTimer);
