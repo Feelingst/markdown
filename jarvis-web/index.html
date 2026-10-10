@@ -56,7 +56,8 @@ body {
   align-self: start;
 }
 .avatar { width: 240px; max-width: 100%; aspect-ratio: 1; position: relative; }
-.avatar canvas, .avatar svg { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.avatar canvas, .avatar svg, .avatar video { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.avatar video { object-fit: cover; background: var(--panel-2); }
 .avatar.calibrating canvas { cursor: crosshair; outline: 2px dashed var(--live); outline-offset: 4px; }
 .ring {
   position: absolute; inset: -7px;
@@ -191,6 +192,8 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         </g>
       </svg>
       <img id="photo" alt="" hidden>
+      <video id="simliVideo" autoplay playsinline muted hidden></video>
+      <audio id="simliAudio" autoplay></audio>
       <div class="ring"></div>
     </div>
     <div class="ident">
@@ -213,7 +216,9 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         <button class="linkish" id="photoReset" type="button" hidden>Quitar foto</button>
         <input type="file" id="photoInput" accept="image/*" hidden>
       </div>
-      <button class="linkish" id="keyBtn" type="button">Cambiar clave de API</button>
+      <button class="btn" id="simliBtn" type="button" hidden>Activar vídeo realista</button>
+      <p class="note" id="simliNote"></p>
+      <button class="linkish" id="keyBtn" type="button">Ajustes y claves</button>
     </div>
   </section>
 
@@ -232,7 +237,16 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         <button class="btn" type="submit">Guardar</button>
         <button class="linkish" type="button" id="elClear">Quitar ElevenLabs</button>
       </div>
-      <p class="note">Las claves se guardan solo en este navegador y se envían únicamente a api.anthropic.com y api.elevenlabs.io.</p>
+      <label for="simliKey">Clave de API de Simli (opcional, vídeo realista)</label>
+      <input type="password" id="simliKey" placeholder="Clave de Simli" autocomplete="off">
+      <label for="simliFace">Face ID de Simli</label>
+      <input type="text" id="simliFace" placeholder="ID de la cara creada en Simli" autocomplete="off" spellcheck="false">
+      <p class="note">Crea la cara a partir de tu foto en app.simli.com y copia su Face ID. Necesita también la voz de ElevenLabs.</p>
+      <div class="row">
+        <button class="btn" type="submit">Guardar</button>
+        <button class="linkish" type="button" id="simliClear">Quitar Simli</button>
+      </div>
+      <p class="note">Las claves se guardan solo en este navegador y se envían únicamente a api.anthropic.com, api.elevenlabs.io y api.simli.ai.</p>
     </form>
     <div class="log" id="log" aria-live="polite">
       <div class="msg her">
@@ -249,6 +263,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 </main>
 
 <script src="anthropic-sdk.js"></script>
+<script src="simli-sdk.js"></script>
 <script>
 "use strict";
 const Anthropic = window.AnthropicSDK.default;
@@ -525,12 +540,19 @@ function paintSetup() {
   $("elVoice").value = store.get("jarvis-el-voice") || "";
   $("elClear").hidden = !store.get("jarvis-el-key");
   $("elKey").placeholder = store.get("jarvis-el-key") ? "Clave guardada" : "sk_…";
+  $("simliFace").value = store.get("jarvis-simli-face") || "";
+  $("simliKey").placeholder = store.get("jarvis-simli-key") ? "Clave guardada" : "Clave de Simli";
+  $("simliClear").hidden = !store.get("jarvis-simli-key");
 }
 paintSetup();
 $("keyBtn").onclick = () => { paintSetup(); $("setup").hidden = false; $("key").focus(); };
 $("setup").onsubmit = (e) => {
   e.preventDefault();
   const key = $("key").value.trim(), elKey = $("elKey").value.trim(), elVoice = $("elVoice").value.trim();
+  const simliKey = $("simliKey").value.trim(), simliFace = $("simliFace").value.trim();
+  if (simliKey) store.set("jarvis-simli-key", simliKey);
+  store.set("jarvis-simli-face", simliFace || null);
+  $("simliKey").value = "";
   if (key) { store.set("jarvis-key", key); connect(key); }
   if (elKey) store.set("jarvis-el-key", elKey);
   store.set("jarvis-el-voice", elVoice || null);
@@ -539,8 +561,10 @@ $("setup").onsubmit = (e) => {
   if (!client) { $("key").focus(); return; }
   $("setup").hidden = true;
   paintVoiceMode();
+  simli.paint();
 };
-$("elClear").onclick = () => { store.set("jarvis-el-key", null); store.set("jarvis-el-voice", null); paintSetup(); paintVoiceMode(); };
+$("elClear").onclick = () => { store.set("jarvis-el-key", null); store.set("jarvis-el-voice", null); paintSetup(); paintVoiceMode(); simli.paint(); };
+$("simliClear").onclick = () => { simli.disconnect(); store.set("jarvis-simli-key", null); store.set("jarvis-simli-face", null); paintSetup(); simli.paint(); };
 
 /* ---------- Voz de Jarvis ---------- */
 const synth = window.speechSynthesis;
@@ -574,6 +598,77 @@ function finishChunk(text) {
 
 /* Voz de ElevenLabs: pide cada frase con marcas de tiempo por letra, la reproduce
    en orden y programa la boca del avatar con esos tiempos (sincronía real). */
+const SIMLI_LATENCY_MS = 450; // retardo aproximado hasta que Simli empieza a hablar
+let simliHead = 0;
+
+/* Vídeo realista con Simli: la cara de tu foto, animada en tiempo real a partir
+   del audio de ElevenLabs (lip sync real). */
+const simli = (() => {
+  let client = null, state = "off";
+  const cfg = () => ({ key: store.get("jarvis-simli-key"), face: store.get("jarvis-simli-face") });
+  const configured = () => !!(cfg().key && cfg().face);
+  const note = (t) => { $("simliNote").textContent = t; };
+
+  function paint() {
+    const b = $("simliBtn"), on = state === "on";
+    b.hidden = !configured();
+    b.disabled = state === "connecting";
+    b.setAttribute("aria-pressed", String(on));
+    b.textContent = on ? "Vídeo realista activo · desconectar" : state === "connecting" ? "Conectando vídeo…" : "Activar vídeo realista";
+    $("simliVideo").hidden = !on;
+    // El avatar local se oculta mientras se ve el vídeo, sin perder su animación.
+    for (const id of ["photoCanvas", "fallback"]) $(id).style.display = on ? "none" : "";
+  }
+
+  function errorText(e) {
+    const t = String(e?.message || e || "");
+    if (/401|403|unauthori|invalid.*key/i.test(t)) return "La clave de Simli no es válida.";
+    if (/face/i.test(t)) return "Simli no encuentra esa cara. Revisa el Face ID.";
+    if (/Failed to fetch|NetworkError|Load failed/i.test(t)) return "No he podido conectar con Simli.";
+    return "Simli ha fallado: " + t.slice(0, 140);
+  }
+
+  async function connect() {
+    if (state !== "off" || !configured()) return;
+    if (!eleven.ready()) { note("El vídeo realista necesita la voz de ElevenLabs: añade su clave y el ID de voz en Ajustes."); return; }
+    state = "connecting"; note(""); paint();
+    eleven.unlock();
+    try {
+      const { key, face } = cfg();
+      const { session_token } = await SimliSDK.generateSimliSessionToken({
+        apiKey: key,
+        config: { faceId: face, handleSilence: true, maxSessionLength: 3600, maxIdleTime: 300 },
+      });
+      const ice = await SimliSDK.generateIceServers(key);
+      const c = new SimliSDK.SimliClient(session_token, $("simliVideo"), $("simliAudio"), ice, SimliSDK.LogLevel.ERROR, "p2p");
+      c.on("stop", () => { if (client === c) disconnect("La sesión de vídeo se ha cerrado (inactividad o tiempo máximo)."); });
+      c.on("error", (d) => { if (client === c) disconnect(errorText(d)); });
+      client = c;
+      await c.start();
+      if (client !== c) return;
+      state = "on"; note("Vídeo conectado. Cada minuto conectado consume saldo de Simli."); paint();
+    } catch (e) {
+      const c = client; client = null; state = "off";
+      try { await c?.stop(); } catch {}
+      note(errorText(e)); paint();
+    }
+  }
+
+  async function disconnect(msg = "") {
+    const c = client; client = null; state = "off"; simliHead = 0;
+    paint(); note(msg);
+    try { await c?.stop(); } catch {}
+  }
+
+  return {
+    active: () => state === "on" && !!client,
+    configured, connect, disconnect, paint,
+    send(pcm) { for (let i = 0; i < pcm.length; i += 6000) client.sendAudioData(pcm.subarray(i, i + 6000)); },
+    clear() { try { client?.ClearBuffer(); } catch {} },
+  };
+})();
+$("simliBtn").onclick = () => (simli.active() ? simli.disconnect() : simli.connect());
+
 const eleven = (() => {
   const MODEL_ID = "eleven_flash_v2_5"; // multilingüe y de baja latencia
   let ac = null, analyser = null, levelBuf = null, chain = Promise.resolve(), source = null, gen = 0, ctls = [];
@@ -598,7 +693,7 @@ const eleven = (() => {
   }
 
   async function fetchChunk(text, signal) {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice())}/with-timestamps?output_format=mp3_44100_128`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice())}/with-timestamps?output_format=pcm_16000`, {
       method: "POST",
       signal,
       headers: { "xi-api-key": key(), "Content-Type": "application/json" },
@@ -610,9 +705,8 @@ const eleven = (() => {
       throw err;
     }
     const data = await res.json();
-    const bytes = Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0));
-    const buffer = await audio().decodeAudioData(bytes.buffer);
-    return { buffer, align: data.alignment || data.normalized_alignment || null };
+    const pcm = Uint8Array.from(atob(data.audio_base64), c => c.charCodeAt(0)); // PCM16 mono, 16 kHz
+    return { pcm, dur: pcm.length / 32000, align: data.alignment || data.normalized_alignment || null };
   }
 
   // Convierte la alineación por letra en posturas de boca con tiempos absolutos.
@@ -631,11 +725,18 @@ const eleven = (() => {
     return out;
   }
 
-  function play({ buffer, align }, text, myGen) {
+  function pcmToBuffer(pcm) {
+    const n = pcm.length >> 1, view = new DataView(pcm.buffer, pcm.byteOffset, n * 2);
+    const buf = audio().createBuffer(1, n, 16000), ch = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) ch[i] = view.getInt16(i * 2, true) / 32768;
+    return buf;
+  }
+
+  function play({ pcm, align }, text, myGen) {
     return new Promise((resolve) => {
       if (myGen !== gen) return resolve();
       const src = audio().createBufferSource();
-      src.buffer = buffer;
+      src.buffer = pcmToBuffer(pcm);
       src.connect(analyser);
       source = src;
       const t0 = performance.now() + 30;
@@ -660,8 +761,19 @@ const eleven = (() => {
       chain = chain.then(async () => {
         try {
           const clip = await job;
-          await play(clip, text, myGen);
-          if (myGen === gen) finishChunk(text);
+          if (myGen !== gen) return;
+          if (simli.active()) {
+            // Simli devuelve vídeo y audio sincronizados: le mandamos el audio y
+            // calculamos cuándo terminará de sonar esta frase.
+            const now = performance.now(), start = Math.max(now + SIMLI_LATENCY_MS, simliHead);
+            simliHead = start + clip.dur * 1000;
+            simli.send(clip.pcm);
+            setTimeout(() => { if (myGen === gen) setMode("speaking"); }, start - now);
+            setTimeout(() => { if (myGen === gen) finishChunk(text); }, simliHead - now);
+          } else {
+            await play(clip, text, myGen);
+            if (myGen === gen) finishChunk(text);
+          }
         } catch (err) {
           if (myGen !== gen || err.name === "AbortError") return;
           pendingUtter--;
@@ -677,6 +789,8 @@ const eleven = (() => {
     },
     stop() {
       gen++;
+      simliHead = 0;
+      simli.clear();
       for (const c of ctls) c.abort();
       ctls = [];
       if (source) { try { source.stop(); } catch {} source = null; }
@@ -726,6 +840,7 @@ if (synth) {
   muteBtn.onclick = () => { muted = !muted; store.set("jarvis-mute", muted ? "1" : "0"); if (muted) { stopSpeaking(); afterTurn(); } else eleven.unlock(); paint(); };
 }
 paintVoiceMode();
+simli.paint();
 
 /* ---------- Micrófono continuo ---------- */
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;

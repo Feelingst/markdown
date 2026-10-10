@@ -4,7 +4,7 @@ Asistente con voz femenina que te llama Tomás y habla en español. Escucha con 
 
 ## Cómo usarlo
 
-1. Descarga la carpeta `jarvis-web` completa (necesita `index.html` y `anthropic-sdk.js` juntos).
+1. Descarga la carpeta `jarvis-web` completa (necesita `index.html`, `anthropic-sdk.js` y `simli-sdk.js` juntos).
 2. Abre `index.html` con **Chrome** o **Edge** (doble clic). Firefox no tiene reconocimiento de voz.
 3. Pega tu clave de API de Anthropic (créala en console.anthropic.com → API Keys). Se guarda solo en ese navegador.
    Opcional: pega también tu clave de ElevenLabs y el ID de tu voz para que hable con esa voz (el ID está en ElevenLabs → Voices → tu voz → "Copy voice ID").
@@ -36,7 +36,17 @@ Con foto, el avatar abre la boca, mueve la cabeza y cambia el color del aro, per
 
 ## Voz de ElevenLabs
 
-Con la clave y el ID de voz de ElevenLabs, cada frase se pide a ElevenLabs (modelo `eleven_flash_v2_5`, en español) junto con el momento exacto de cada letra. Mientras suena, la boca del avatar se mueve con esos tiempos y con el volumen real del audio, así que el lip sync es mucho más preciso que con la voz del navegador. La siguiente frase se pide mientras suena la anterior para que no haya pausas. Si ElevenLabs falla (clave incorrecta, voz no encontrada, sin saldo), lo avisa y usa la voz del navegador. Las claves se cambian o se quitan en **Cambiar clave de API**.
+Con la clave y el ID de voz de ElevenLabs, cada frase se pide a ElevenLabs (modelo `eleven_flash_v2_5`, en español) junto con el momento exacto de cada letra. Mientras suena, la boca del avatar se mueve con esos tiempos y con el volumen real del audio, así que el lip sync es mucho más preciso que con la voz del navegador. La siguiente frase se pide mientras suena la anterior para que no haya pausas. Si ElevenLabs falla (clave incorrecta, voz no encontrada, sin saldo), lo avisa y usa la voz del navegador. Las claves se cambian o se quitan en **Ajustes y claves**.
+
+## Vídeo realista con Simli (opcional)
+
+Simli anima en tiempo real la cara de una foto a partir del audio, con lip sync de verdad. Necesita la voz de ElevenLabs.
+
+1. En [app.simli.com](https://app.simli.com) crea una cara a partir de tu foto y copia su **Face ID**. Copia también tu **clave de API**.
+2. En **Ajustes y claves**, pega la clave de Simli y el Face ID y guarda.
+3. Pulsa **Activar vídeo realista**. El círculo del avatar pasa a mostrar el vídeo de Simli.
+
+Mientras está conectado, cada frase de ElevenLabs (audio PCM de 16 kHz) se envía a Simli, que devuelve el vídeo y el audio ya sincronizados. Pulsa el mismo botón para desconectar: Simli cobra por minuto conectado. Si pasan 5 minutos sin hablar, Simli cierra la sesión y vuelve el avatar local.
 
 ## Detalles
 
@@ -45,3 +55,4 @@ Con la clave y el ID de voz de ElevenLabs, cada frase se pide a ElevenLabs (mode
 - La voz depende de las voces en español instaladas en tu sistema; elige otra en la lista si la que sale no te convence.
 - La conversación no se guarda al recargar la página.
 - `anthropic-sdk.js` es el SDK oficial `@anthropic-ai/sdk` 0.128.0 empaquetado para navegador.
+- `simli-sdk.js` es el cliente oficial `simli-client` 3.0.2 (con `livekit-client`) empaquetado para navegador.
