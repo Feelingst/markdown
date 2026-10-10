@@ -2,21 +2,29 @@
 
 Asistente con voz femenina que te llama Tomás y habla en español. Escucha con el micrófono abierto de forma continua: cuando dejas de hablar envía lo que has dicho, responde en voz alta y vuelve a escuchar.
 
-## Cómo usarlo
+## Abrir Jarvis como aplicación
 
-1. Descarga la carpeta `jarvis-web` completa (necesita `index.html`, `anthropic-sdk.js` y `simli-sdk.js` juntos).
-2. Abre `index.html` con **Chrome** o **Edge** (doble clic). Firefox no tiene reconocimiento de voz.
-3. Pega tu clave de API de Anthropic (créala en console.anthropic.com → API Keys). Se guarda solo en ese navegador.
-   Opcional: pega también tu clave de ElevenLabs y el ID de tu voz para que hable con esa voz (el ID está en ElevenLabs → Voices → tu voz → "Copy voice ID").
-4. Pulsa **Activar micrófono** y acepta el permiso.
+Descarga la carpeta `jarvis-web` completa y abre Jarvis con doble clic en el lanzador de tu sistema. Se abre en su propia ventana, sin barra de direcciones, con el icono de Jarvis.
 
-Si Chrome te pide permiso de micrófono una y otra vez, sírvela desde localhost para que lo recuerde:
+| Sistema | Lanzador | Requisitos |
+|---|---|---|
+| **Windows** | `Jarvis.bat` | Google Chrome o Microsoft Edge (Edge ya viene con Windows) |
+| **macOS** | `Jarvis.command` | Chrome o Edge, y `python3` |
+| **Linux** | `jarvis.sh` | Chrome, Chromium o Edge, y `python3` |
 
-```bash
-cd jarvis-web
-python3 -m http.server 8000
-# y abre http://localhost:8000
-```
+En Windows, `crear-acceso-directo.bat` pone un acceso directo **Jarvis** con icono en el escritorio.
+
+El lanzador sirve la carpeta en `http://localhost:8765` y abre el navegador en modo aplicación con un perfil propio de Jarvis. Así el permiso del micrófono y las claves se recuerdan. Al cerrar la ventana, el servidor se cierra solo. Firefox no sirve: no tiene reconocimiento de voz.
+
+La primera vez:
+1. Pega tu clave de API de Anthropic (console.anthropic.com → API Keys). Opcionalmente, las de ElevenLabs y Simli.
+2. Pulsa **Activar micrófono** y acepta el permiso.
+
+Las claves se guardan en el perfil de la aplicación. Si antes abrías `index.html` directamente, tendrás que volver a pegarlas una vez.
+
+Si Windows avisa de que el archivo viene de internet, pulsa "Más información → Ejecutar de todas formas", o antes de abrirlo haz clic derecho en el ZIP → Propiedades → **Desbloquear**.
+
+También puedes seguir abriendo `index.html` directamente con doble clic, pero en ese modo Chrome puede pedir permiso del micrófono cada vez.
 
 ## El avatar
 
@@ -55,4 +63,5 @@ Mientras está conectado, cada frase de ElevenLabs (audio PCM de 16 kHz) se env�
 - La voz depende de las voces en español instaladas en tu sistema; elige otra en la lista si la que sale no te convence.
 - La conversación no se guarda al recargar la página.
 - `anthropic-sdk.js` es el SDK oficial `@anthropic-ai/sdk` 0.128.0 empaquetado para navegador.
+- `iniciar-jarvis.ps1` es el servidor local y lanzador de Windows (PowerShell, sin instalar nada). Los datos de la aplicación quedan en `%LOCALAPPDATA%\JarvisTomas`; en macOS y Linux, en `~/.jarvis-tomas`.
 - `simli-sdk.js` es el cliente oficial `simli-client` 3.0.2 (con `livekit-client`) empaquetado para navegador.
