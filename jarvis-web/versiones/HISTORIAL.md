@@ -1,13 +1,13 @@
 # Historial de versiones de Jarvis
 
-La versión más reciente va arriba. Cada versión tiene una etiqueta en git (`jarvis-vX.Y.Z`); el enlace **Descargar** baja un ZIP del repositorio tal como estaba en esa versión. Jarvis está en la carpeta `jarvis-web/` del ZIP; la v0.1.0 es solo `jarvis.py`.
+La versión más reciente va arriba. El enlace **Descargar** de cada versión baja un ZIP del repositorio tal como estaba en ese commit. Jarvis está en la carpeta `jarvis-web/` del ZIP; la v0.1.0 es solo `jarvis.py`.
 
 Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z** cuando es un arreglo. **X** pasará a 1 cuando Jarvis se dé por terminada.
 
 ---
 
 ## v0.7.0 · 2026-10-10 · Aplicación de escritorio
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.7.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/8c989ba45b6287cd22e96646d2fb597ff003ae6a.zip) · [ver código](https://github.com/Feelingst/markdown/tree/8c989ba45b6287cd22e96646d2fb597ff003ae6a) · commit `8c989ba`
 
 - Lanzadores con doble clic: `Jarvis.bat` (Windows), `Jarvis.command` (macOS) y `jarvis.sh` (Linux).
 - Abre Jarvis en su propia ventana (Chrome o Edge en modo aplicación) con un servidor local en `localhost:8765`. Usa un perfil propio, así que recuerda el permiso del micrófono y las claves. El servidor se cierra al cerrar la ventana.
@@ -17,7 +17,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - **Probado:** el servidor de Windows con PowerShell 7 en Linux y el lanzador de macOS/Linux. **Sin probar:** en Windows real.
 
 ## v0.6.0 · 2026-10-10 · Tema oscuro
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.6.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/b4dcb9ea000a07a765d106c565f700affec4275f.zip) · [ver código](https://github.com/Feelingst/markdown/tree/b4dcb9ea000a07a765d106c565f700affec4275f) · commit `b4dcb9e`
 
 - Fondo casi negro y paneles gris oscuro neutro, texto en blanco puro.
 - Campos de texto de los ajustes con el mismo estilo oscuro.
@@ -25,7 +25,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - El botón "Activar micrófono" ya no parece desactivado.
 
 ## v0.5.0 · 2026-10-10 · Vídeo realista con Simli
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.5.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/8f8d16b1255a04537c27f37c1d3aa1486a48658a.zip) · [ver código](https://github.com/Feelingst/markdown/tree/8f8d16b1255a04537c27f37c1d3aa1486a48658a) · commit `8f8d16b`
 
 - Opcional: con una clave de Simli y un Face ID, el círculo del avatar muestra un vídeo de la cara de tu foto con lip sync real.
 - El audio de ElevenLabs se pide en PCM de 16 kHz, que sirve tanto para Simli como para reproducirlo en la página.
@@ -33,7 +33,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - **Probado:** con Simli simulado. **Sin probar:** con el servicio real.
 
 ## v0.4.0 · 2026-10-10 · Voz de ElevenLabs
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.4.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/d2a741eac3a4088c487b18a4e6e30c95ba863ba0.zip) · [ver código](https://github.com/Feelingst/markdown/tree/d2a741eac3a4088c487b18a4e6e30c95ba863ba0) · commit `d2a741e`
 
 - Opcional: habla con tu voz de ElevenLabs (modelo `eleven_flash_v2_5`).
 - Lip sync con el momento exacto de cada letra y el volumen real del audio.
@@ -41,7 +41,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - Si ElevenLabs falla, usa la voz del navegador y lo avisa.
 
 ## v0.3.0 · 2026-10-10 · Avatar que reacciona
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.3.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/ea7cc3f4ad517d0b6ff6f1971e61174399863122.zip) · [ver código](https://github.com/Feelingst/markdown/tree/ea7cc3f4ad517d0b6ff6f1971e61174399863122) · commit `ea7cc3f`
 
 - Labios sincronizados palabra a palabra con la voz, según sus vocales.
 - Emociones: Claude marca cada respuesta (alegre, divertida, pensativa, sorprendida, preocupada o neutral) y el avatar cambia de expresión y el aro de color.
@@ -49,7 +49,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - Con foto propia: la mandíbula se mueve, con un botón para ajustar dónde está la boca.
 
 ## v0.2.0 · 2026-10-10 · Aplicación local con micrófono
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.2.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/73ddb3bce481366b690b69ea1fee27472cccb146.zip) · [ver código](https://github.com/Feelingst/markdown/tree/73ddb3bce481366b690b69ea1fee27472cccb146) · commit `73ddb3b`
 
 - Página `jarvis-web/index.html` que se abre en Chrome o Edge.
 - Micrófono siempre abierto: envía al dejar de hablar y se pausa mientras Jarvis habla.
@@ -57,7 +57,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 - Avatar ilustrado de una mujer de unos 40 años, con opción de poner tu propia foto.
 
 ## v0.1.0 · 2026-09-28 · Script de prueba
-[Descargar](https://github.com/Feelingst/markdown/archive/refs/tags/jarvis-v0.1.0.zip)
+[Descargar](https://github.com/Feelingst/markdown/archive/7f0b8ecadaa984890e39113520863556c448bb22.zip) · [ver código](https://github.com/Feelingst/markdown/tree/7f0b8ecadaa984890e39113520863556c448bb22) · commit `7f0b8ec`
 
 - `jarvis.py`: Jarvis se presenta en una frase usando el SDK de Python de Anthropic.
 
