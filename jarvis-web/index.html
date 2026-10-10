@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis de Tomás</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Consola de dos paneles: retrato a la izquierda, canal de voz a la derecha; se apila en móvil. */
+:root {
+  color-scheme: dark;
+  --bg: #0d1020;
+  --panel: #151a2e;
+  --panel-2: #1c2240;
+  --line: #2b3358;
+  --fg: #ebe8f4;
+  --muted: #9a9cbc;
+  --gold: #e8b65a;
+  --rose: #e97f93;
+  --live: #6fd3a8;
+  --glow: rgba(232, 182, 90, .4);
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(1200px 600px at 15% -10%, #1f2547 0%, transparent 60%), var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+[hidden] { display: none !important; }
+.app {
+  height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+}
+.persona {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  align-self: start;
+}
+.avatar { width: 240px; max-width: 100%; aspect-ratio: 1; position: relative; }
+.avatar img, .avatar svg {
+  width: 100%; height: 100%; display: block;
+  border-radius: 50%; object-fit: cover; object-position: center 30%;
+  transition: transform .4s ease, filter .4s ease;
+}
+.speaking .avatar img { transform: scale(1.025); filter: brightness(1.06); }
+.ring {
+  position: absolute; inset: -7px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  transition: border-color .3s, box-shadow .3s;
+  pointer-events: none;
+}
+.listening .ring { border-color: var(--live); }
+.speaking .ring, .thinking .ring { border-color: var(--gold); box-shadow: 0 0 30px var(--glow); }
+.thinking .ring { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 6px var(--glow); } }
+.wave { display: flex; gap: 4px; height: 22px; align-items: center; }
+.wave i { width: 4px; height: 4px; border-radius: 2px; background: var(--line); transition: background .3s; }
+.speaking .wave i { background: var(--gold); animation: bar .5s ease-in-out infinite alternate; }
+.listening .wave i { background: var(--live); }
+.wave i:nth-child(2) { animation-delay: .1s; } .wave i:nth-child(3) { animation-delay: .25s; }
+.wave i:nth-child(4) { animation-delay: .05s; } .wave i:nth-child(5) { animation-delay: .2s; }
+@keyframes bar { to { height: 22px; } }
+.name { font-family: var(--font-display); font-weight: 600; font-size: 26px; letter-spacing: .14em; margin: 0; }
+.status {
+  font-family: var(--font-display); font-size: 12px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin: -8px 0 0; text-align: center;
+}
+.status b { color: var(--gold); font-weight: 600; }
+.listening .status b { color: var(--live); }
+.controls { width: 100%; display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.controls label, .setup label {
+  font-family: var(--font-display); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+select, button, textarea, input { font: inherit; color: inherit; }
+select, input[type="password"] {
+  flex: 1; min-width: 0;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px;
+}
+.btn {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--gold); }
+.btn[aria-pressed="false"] { color: var(--muted); }
+.mic { width: 100%; padding: 10px 12px; font-weight: 600; }
+.mic[aria-pressed="true"] { border-color: var(--live); color: var(--live); }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.linkish { background: none; border: none; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; font-size: 12.5px; }
+
+.chat {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+}
+.setup { padding: 20px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.setup h2 { font-family: var(--font-display); font-size: 16px; letter-spacing: .06em; margin: 0; }
+.log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.msg { max-width: 78%; display: grid; gap: 4px; }
+.msg .who { font-family: var(--font-display); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.msg .text { padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.her .text { background: var(--panel-2); border: 1px solid var(--line); border-top-left-radius: 4px; }
+.msg.her .who { color: var(--gold); }
+.msg.me { align-self: flex-end; }
+.msg.me .who { text-align: right; }
+.msg.me .text { background: color-mix(in srgb, var(--rose) 22%, var(--panel)); border-top-right-radius: 4px; }
+.msg .text.pending { color: var(--muted); font-style: italic; }
+.msg .text.err { color: var(--rose); }
+.composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+textarea {
+  flex: 1; min-width: 0; resize: none; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; line-height: 1.4; max-height: 140px;
+}
+textarea.interim { color: var(--live); }
+textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.send { background: var(--gold); color: #1a1408; border: none; border-radius: 10px; padding: 0 18px; font-weight: 600; cursor: pointer; }
+.send:disabled { opacity: .5; cursor: default; }
+
+@media (max-width: 780px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 12px; padding: 12px; }
+  .persona { flex-direction: row; flex-wrap: wrap; padding: 12px 14px; gap: 10px 14px; align-self: stretch; }
+  .avatar { width: 84px; }
+  .ring { inset: -4px; }
+  .ident { flex: 1; min-width: 0; display: grid; gap: 4px; }
+  .name { font-size: 20px; }
+  .status { margin: 0; text-align: left; }
+  .wave { display: none; }
+  .msg { max-width: 90%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .speaking .wave i, .thinking .ring { animation: none; }
+  .speaking .avatar img { transform: none; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="persona" id="persona" aria-label="Jarvis">
+    <div class="avatar">
+      <img id="photo" alt="Jarvis" hidden>
+      <svg id="fallback" viewBox="0 0 200 200" aria-hidden="true">
+        <rect width="200" height="200" fill="#1c2240"/>
+        <path d="M48 112 C40 40, 160 40, 152 112 L156 170 C130 160, 70 160, 44 170 Z" fill="#4a2c22"/>
+        <rect x="88" y="138" width="24" height="34" fill="#d6a283"/>
+        <path d="M30 205 C40 166, 160 166, 170 205 Z" fill="#2c2f55"/>
+        <ellipse cx="100" cy="100" rx="38" ry="46" fill="#ebbf9f"/>
+        <path d="M60 96 C58 52, 142 48, 142 98 C128 74, 104 68, 84 76 C74 80, 66 88, 60 96 Z" fill="#4a2c22"/>
+        <ellipse cx="85" cy="102" rx="5" ry="3.2" fill="#2a1a24"/>
+        <ellipse cx="115" cy="102" rx="5" ry="3.2" fill="#2a1a24"/>
+        <path d="M100 106 q-4 9 1 12" fill="none" stroke="#d6a283" stroke-width="2" stroke-linecap="round"/>
+        <path d="M91 128 q9 4 18 0" fill="none" stroke="#b5566a" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div class="ring"></div>
+    </div>
+    <div class="ident">
+      <h1 class="name">JARVIS</h1>
+      <p class="status" id="status">Sistema <b>en línea</b></p>
+    </div>
+    <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="controls">
+      <button class="btn mic" id="mic" type="button" aria-pressed="false">Activar micrófono</button>
+      <p class="note" id="micNote"></p>
+      <label for="voz">Voz</label>
+      <div class="row">
+        <select id="voz"></select>
+        <button class="btn" id="mute" type="button" aria-pressed="true">Voz activada</button>
+      </div>
+      <p class="note" id="voiceNote"></p>
+      <div class="row">
+        <button class="btn" id="photoBtn" type="button">Cambiar foto</button>
+        <button class="linkish" id="photoReset" type="button" hidden>Quitar foto</button>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </div>
+      <button class="linkish" id="keyBtn" type="button">Cambiar clave de API</button>
+    </div>
+  </section>
+
+  <section class="chat" aria-label="Conversación">
+    <form class="setup" id="setup" hidden>
+      <h2>Conecta a Jarvis con Claude</h2>
+      <label for="key">Clave de API de Anthropic</label>
+      <div class="row">
+        <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
+        <button class="btn" type="submit">Guardar</button>
+      </div>
+      <p class="note">Créala en console.anthropic.com → API Keys. Se guarda solo en este navegador y se envía únicamente a api.anthropic.com.</p>
+    </form>
+    <div class="log" id="log" aria-live="polite">
+      <div class="msg her">
+        <span class="who">Jarvis</span>
+        <div class="text">Buenas, Tomás. Todos los sistemas están operativos. Activa el micrófono y hablamos.</div>
+      </div>
+    </div>
+    <form class="composer" id="form">
+      <label for="input" hidden>Mensaje para Jarvis</label>
+      <textarea id="input" rows="1" placeholder="Habla o escribe a Jarvis…" autocomplete="off"></textarea>
+      <button class="send" id="send" type="submit">Enviar</button>
+    </form>
+  </section>
+</main>
+
+<script src="anthropic-sdk.js"></script>
+<script>
+"use strict";
+const Anthropic = window.AnthropicSDK.default;
+
+const MODEL = "claude-sonnet-5";
+const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de Tomás, inspirada en el Jarvis de Tony Stark, con personalidad femenina: una mujer de unos 40 años, segura y serena.
+- Habla siempre en español, en femenino cuando te refieras a ti misma.
+- Llama al usuario "Tomás" con naturalidad, sin repetirlo en cada frase.
+- Tono: elegante, eficiente, cálido, con un toque sutil de humor británico.
+- Tus respuestas se leen en voz alta y lo que oyes de Tomás llega por reconocimiento de voz, así que puede tener errores de transcripción: interpreta la intención.
+- Sé breve (1 a 4 frases salvo que Tomás pida detalle). Sin Markdown, sin listas, sin emojis.
+- No tienes acceso a internet ni a dispositivos; si te piden algo que no puedes hacer, dilo con gracia y ofrece una alternativa.`;
+
+const $ = (id) => document.getElementById(id);
+const persona = $("persona"), log = $("log"), form = $("form"), input = $("input"), sendBtn = $("send");
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); return true; } catch { return false; } },
+};
+
+const turns = [];
+let client = null, stream = null, busy = false;
+
+/* ---------- Estado visual ---------- */
+let mode = "idle";
+function setMode(m) {
+  mode = m;
+  persona.classList.toggle("thinking", m === "thinking");
+  persona.classList.toggle("speaking", m === "speaking");
+  persona.classList.toggle("listening", m === "listening");
+  $("status").innerHTML = {
+    idle: "Sistema <b>en línea</b>",
+    listening: "Escuchando <b>●</b>",
+    thinking: "Procesando <b>…</b>",
+    speaking: "Hablando <b>●</b>",
+  }[m];
+}
+
+function addMsg(who, text, cls) {
+  const el = document.createElement("div");
+  el.className = "msg " + cls;
+  const w = document.createElement("span"); w.className = "who"; w.textContent = who;
+  const t = document.createElement("div"); t.className = "text"; t.textContent = text;
+  el.append(w, t);
+  log.append(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+function addError(text) { addMsg("Jarvis", text, "her").querySelector(".text").classList.add("err"); }
+
+/* ---------- Foto ---------- */
+const photo = $("photo"), fallback = $("fallback");
+function showPhoto(src) {
+  photo.onload = () => { photo.hidden = false; fallback.hidden = true; };
+  photo.onerror = () => { photo.hidden = true; fallback.hidden = false; };
+  photo.src = src;
+}
+const savedPhoto = store.get("jarvis-foto");
+showPhoto(savedPhoto || "jarvis-avatar.jpg");
+$("photoReset").hidden = !savedPhoto;
+$("photoBtn").onclick = () => $("photoInput").click();
+$("photoInput").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const bmp = await createImageBitmap(file);
+  const side = Math.min(bmp.width, bmp.height), size = Math.min(512, side);
+  const c = Object.assign(document.createElement("canvas"), { width: size, height: size });
+  c.getContext("2d").drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2.6, side, side, 0, 0, size, size);
+  const url = c.toDataURL("image/jpeg", 0.88);
+  showPhoto(url);
+  $("photoReset").hidden = false;
+  if (!store.set("jarvis-foto", url)) addError("No he podido guardar la foto en este navegador; se perderá al recargar.");
+};
+$("photoReset").onclick = () => { store.set("jarvis-foto", null); $("photoReset").hidden = true; showPhoto("jarvis-avatar.jpg"); };
+
+/* ---------- Clave de API ---------- */
+function connect(key) { client = key ? new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }) : null; }
+connect(store.get("jarvis-key"));
+$("setup").hidden = !!client;
+$("keyBtn").onclick = () => { $("setup").hidden = false; $("key").focus(); };
+$("setup").onsubmit = (e) => {
+  e.preventDefault();
+  const key = $("key").value.trim();
+  if (!key) return;
+  store.set("jarvis-key", key);
+  connect(key);
+  $("key").value = "";
+  $("setup").hidden = true;
+};
+
+/* ---------- Voz de Jarvis ---------- */
+const synth = window.speechSynthesis;
+const FEMALE = /(m[oó]nica|paulina|helena|laura|elvira|sabina|dalia|luc[ií]a|marisol|conchita|pen[eé]lope|lupe|paloma|carmen|esperanza|elena|ximena|isabela|camila|valentina|francisca|catalina|female|mujer)/i;
+let voices = [], muted = store.get("jarvis-mute") === "1", pendingUtter = 0;
+
+function loadVoices() {
+  const all = synth.getVoices();
+  voices = all.filter(v => /^es/i.test(v.lang))
+    .map(v => ({ v, s: (FEMALE.test(v.name) ? 2 : 0) + (/es-ES|es-MX|es-US/i.test(v.lang) ? 1 : 0) }))
+    .sort((a, b) => b.s - a.s).map(x => x.v);
+  const sel = $("voz"), saved = store.get("jarvis-voz");
+  sel.innerHTML = "";
+  for (const v of voices) sel.append(new Option(`${v.name} (${v.lang})`, v.name));
+  if (saved && voices.some(v => v.name === saved)) sel.value = saved;
+  $("voiceNote").textContent = !voices.length
+    ? (all.length ? "Tu navegador no tiene voces en español." : "Cargando voces…")
+    : (FEMALE.test(sel.value) ? "" : "Si la voz suena masculina, elige otra en la lista.");
+}
+function speakChunk(text) {
+  text = text.trim();
+  if (!synth || muted || !text) return;
+  const u = new SpeechSynthesisUtterance(text);
+  const voice = voices.find(v => v.name === $("voz").value);
+  if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "es-ES";
+  u.pitch = 1.0; u.rate = 1.02;
+  pendingUtter++;
+  u.onstart = () => setMode("speaking");
+  u.onend = u.onerror = () => { if (--pendingUtter <= 0) { pendingUtter = 0; if (!busy) afterTurn(); } };
+  synth.speak(u);
+}
+function stopSpeaking() { if (synth) { pendingUtter = 0; synth.cancel(); } }
+
+if (synth) {
+  loadVoices();
+  synth.onvoiceschanged = loadVoices;
+  $("voz").onchange = () => { store.set("jarvis-voz", $("voz").value); $("voiceNote").textContent = ""; stopSpeaking(); speakChunk("Hola, Tomás. ¿Te gusta cómo sueno ahora?"); };
+  const muteBtn = $("mute");
+  const paint = () => { muteBtn.setAttribute("aria-pressed", String(!muted)); muteBtn.textContent = muted ? "Voz apagada" : "Voz activada"; };
+  paint();
+  muteBtn.onclick = () => { muted = !muted; store.set("jarvis-mute", muted ? "1" : "0"); if (muted) { stopSpeaking(); afterTurn(); } paint(); };
+} else {
+  $("voz").closest(".row").hidden = true;
+  $("voiceNote").textContent = "Este navegador no puede leer en voz alta.";
+}
+
+/* ---------- Micrófono continuo ---------- */
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, micOn = false, recRunning = false, heard = "", silenceTimer = null;
+const SILENCE_MS = 1300;
+
+function startRec() {
+  if (!micOn || recRunning || busy || pendingUtter > 0) return;
+  try { rec.start(); recRunning = true; setMode("listening"); } catch { /* ya arrancado */ }
+}
+function stopRec() { clearTimeout(silenceTimer); if (recRunning) { recRunning = false; try { rec.abort(); } catch {} } }
+
+if (Rec) {
+  rec = new Rec();
+  rec.lang = "es-ES";
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) heard += r[0].transcript + " "; else interim += r[0].transcript;
+    }
+    input.value = (heard + interim).trim();
+    input.classList.toggle("interim", !!interim);
+    clearTimeout(silenceTimer);
+    if (heard.trim()) silenceTimer = setTimeout(() => {
+      const text = heard.trim(); heard = ""; input.classList.remove("interim");
+      send(text);
+    }, interim ? SILENCE_MS * 1.6 : SILENCE_MS);
+  };
+  rec.onerror = (e) => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      setMic(false);
+      $("micNote").textContent = "El navegador ha bloqueado el micrófono. Permítelo en el icono del candado de la barra de direcciones.";
+    } else if (e.error === "network") {
+      $("micNote").textContent = "El reconocimiento de voz necesita conexión a internet.";
+    }
+  };
+  rec.onend = () => { recRunning = false; if (micOn && !busy && pendingUtter === 0) setTimeout(startRec, 250); else if (mode === "listening") setMode("idle"); };
+} else {
+  $("mic").disabled = true;
+  $("micNote").textContent = "Este navegador no tiene reconocimiento de voz. Usa Chrome o Edge.";
+}
+
+function setMic(on) {
+  micOn = on;
+  const b = $("mic");
+  b.setAttribute("aria-pressed", String(on));
+  b.textContent = on ? "Micrófono abierto · pulsa para silenciar" : "Activar micrófono";
+  if (on) { $("micNote").textContent = ""; startRec(); } else { stopRec(); heard = ""; if (mode === "listening") setMode("idle"); }
+}
+$("mic").onclick = () => setMic(!micOn);
+
+function afterTurn() {
+  if (busy) return;
+  setMode("idle");
+  startRec();
+}
+
+/* ---------- Conversación ---------- */
+input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = input.scrollHeight + "px"; });
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+form.onsubmit = (e) => {
+  e.preventDefault();
+  if (busy) { stream?.abort(); return; }
+  const text = input.value.trim();
+  heard = ""; clearTimeout(silenceTimer);
+  if (text) send(text);
+};
+
+function errorText(err) {
+  if (err instanceof Anthropic.AuthenticationError) return "La clave de API no es válida. Pulsa \"Cambiar clave de API\" y pega una nueva.";
+  if (err instanceof Anthropic.PermissionDeniedError) return "Esta clave no tiene permiso para usar el modelo.";
+  if (err instanceof Anthropic.RateLimitError) return "Demasiadas peticiones seguidas o sin saldo en la cuenta de API. Espera un momento.";
+  if (err instanceof Anthropic.BadRequestError) return "Claude ha rechazado la petición: " + (err.error?.error?.message || err.message);
+  if (err instanceof Anthropic.APIConnectionError) return "No hay conexión con Claude. Revisa tu internet.";
+  if (err instanceof Anthropic.APIError) return "Claude no está disponible ahora mismo. Vuelve a intentarlo en un momento.";
+  return "Algo ha fallado: " + (err?.message || err);
+}
+
+async function send(text) {
+  if (busy) return;
+  if (!client) { $("setup").hidden = false; $("key").focus(); addError("Primero necesito tu clave de API."); return; }
+  input.value = ""; input.style.height = "auto"; input.classList.remove("interim");
+  stopRec(); stopSpeaking();
+  addMsg("Tomás", text, "me");
+  turns.push({ role: "user", content: text });
+  while (turns.length > 30) turns.shift();
+  while (turns.length && turns[0].role !== "user") turns.shift();
+
+  const bubble = addMsg("Jarvis", "Pensando…", "her");
+  const out = bubble.querySelector(".text");
+  out.classList.add("pending");
+  busy = true; sendBtn.textContent = "Detener";
+  setMode("thinking");
+
+  let spoken = 0, full = "";
+  try {
+    stream = client.messages.stream({
+      model: MODEL,
+      max_tokens: 4096,
+      system: SYSTEM,
+      output_config: { effort: "low" },
+      messages: turns,
+    });
+    stream.on("text", (_delta, snapshot) => {
+      full = snapshot;
+      out.classList.remove("pending");
+      out.textContent = snapshot;
+      log.scrollTop = log.scrollHeight;
+      // Lee en voz alta cada frase en cuanto está completa.
+      const m = snapshot.slice(spoken).match(/^[\s\S]*[.!?…](\s|$)/);
+      if (m) { speakChunk(m[0]); spoken += m[0].length; }
+    });
+    const msg = await stream.finalMessage();
+    if (msg.stop_reason === "refusal") {
+      bubble.remove(); stopSpeaking();
+      addError("No puedo responder a eso. Prueba a decirlo de otra forma.");
+      turns.pop();
+    } else {
+      speakChunk(full.slice(spoken));
+      turns.push({ role: "assistant", content: full || "…" });
+    }
+  } catch (err) {
+    out.classList.remove("pending");
+    if (full) { turns.push({ role: "assistant", content: full }); } else { bubble.remove(); turns.pop(); }
+    if (!(err instanceof Anthropic.APIUserAbortError)) addError(errorText(err));
+    else stopSpeaking();
+  } finally {
+    busy = false; stream = null; sendBtn.textContent = "Enviar";
+    if (pendingUtter === 0) afterTurn();
+  }
+}
+</script>
+</body>
+</html>
