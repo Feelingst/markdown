@@ -7,7 +7,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 ---
 
 ## v0.7.1 · 2026-10-10 · Arreglos del micrófono
-ENLACE_PENDIENTE
+[Descargar](https://github.com/Feelingst/markdown/archive/d4831a45f68f3cffcf496b53dd309eedcadbc121.zip) · [ver código](https://github.com/Feelingst/markdown/tree/d4831a45f68f3cffcf496b53dd309eedcadbc121) · commit `d4831a4`
 
 - Envía lo que dices tras un silencio aunque el navegador no marque la frase como "final". Safari en iPhone casi nunca la marca, así que antes no enviaba nada.
 - Si el navegador no llega a su servicio de reconocimiento de voz (VPN o red de empresa), deja de reintentar y explica qué hacer (probar con Microsoft Edge o quitar la VPN).
