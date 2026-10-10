@@ -273,7 +273,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 const MODEL = "claude-sonnet-5";
 const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de Tomás, inspirada en el Jarvis de Tony Stark, con personalidad femenina: una mujer de unos 40 años, segura y serena.
 - Habla siempre en español, en femenino cuando te refieras a ti misma.
@@ -588,7 +588,7 @@ function loadVoices() {
   for (const v of voices) sel.append(new Option(`${v.name} (${v.lang})`, v.name));
   if (saved && voices.some(v => v.name === saved)) sel.value = saved;
   $("voiceNote").textContent = !voices.length
-    ? (all.length ? "Tu navegador no tiene voces en español." : "Cargando voces…")
+    ? (all.length ? "Tu navegador no tiene voces en español. En Microsoft Edge hay voces femeninas en español (Elvira, Dalia…)." : "Cargando voces…")
     : (FEMALE.test(sel.value) ? "" : "Si la voz suena masculina, elige otra en la lista.");
   if (eleven.ready()) $("voiceNote").textContent = "Voz de ElevenLabs activa.";
 }
@@ -851,7 +851,7 @@ simli.paint();
 
 /* ---------- Micrófono continuo ---------- */
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, micOn = false, recRunning = false, heard = "", silenceTimer = null;
+let rec = null, micOn = false, recRunning = false, heard = "", silenceTimer = null, netErrors = 0;
 const SILENCE_MS = 1300;
 
 function startRec() {
@@ -866,27 +866,47 @@ if (Rec) {
   rec.continuous = true;
   rec.interimResults = true;
   rec.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    // Se reconstruye la frase con todos los resultados de esta escucha. Algunos
+    // navegadores (Safari en iPhone) casi nunca marcan un resultado como final,
+    // así que también se envía lo provisional tras un silencio.
+    let final = "", interim = "";
+    for (let i = 0; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) heard += r[0].transcript + " "; else interim += r[0].transcript;
+      if (r.isFinal) final += r[0].transcript + " "; else interim += r[0].transcript + " ";
     }
-    input.value = (heard + interim).trim();
-    input.classList.toggle("interim", !!interim);
+    heard = (final + interim).replace(/\s+/g, " ").trim();
+    input.value = heard;
+    input.classList.toggle("interim", !!interim.trim());
+    if (heard) { $("micNote").textContent = ""; netErrors = 0; }
     if (Math.random() < .25) avatar.nod(); // asiente mientras te escucha
     clearTimeout(silenceTimer);
-    if (heard.trim()) silenceTimer = setTimeout(() => {
-      const text = heard.trim(); heard = ""; input.classList.remove("interim");
+    if (heard) silenceTimer = setTimeout(() => {
+      const text = heard; heard = ""; input.classList.remove("interim");
       send(text);
-    }, interim ? SILENCE_MS * 1.6 : SILENCE_MS);
+    }, interim.trim() ? SILENCE_MS * 1.5 : SILENCE_MS);
   };
+  rec.onaudiostart = () => { if (!heard) $("micNote").textContent = "Te escucho. Habla cuando quieras."; };
   rec.onerror = (e) => {
+    const note = $("micNote");
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
       setMic(false);
-      $("micNote").textContent = "El navegador ha bloqueado el micrófono. Permítelo en el icono del candado de la barra de direcciones.";
+      note.textContent = "El navegador ha bloqueado el micrófono. Permítelo en el icono del candado de la barra de direcciones (en iPhone: Ajustes → Safari → Micrófono).";
+    } else if (e.error === "audio-capture") {
+      setMic(false);
+      note.textContent = "No encuentro ningún micrófono. Revisa que esté conectado y que no lo esté usando otra aplicación.";
     } else if (e.error === "network") {
-      $("micNote").textContent = "El reconocimiento de voz necesita conexión a internet.";
+      // El navegador no llega a su servicio de reconocimiento de voz (en Chrome, el de Google).
+      if (++netErrors >= 2) {
+        setMic(false);
+        note.textContent = /Edg\//.test(navigator.userAgent)
+          ? "Edge no puede conectar con su servicio de reconocimiento de voz. Revisa la conexión, la VPN o el cortafuegos de la empresa."
+          : "Este navegador no puede conectar con el servicio de reconocimiento de voz de Google (suele ser una VPN o la red de una empresa). Prueba a abrir Jarvis con Microsoft Edge o desactiva la VPN.";
+      } else note.textContent = "Conectando con el servicio de reconocimiento de voz…";
+    } else if (e.error === "language-not-supported") {
+      setMic(false);
+      note.textContent = "Este navegador no reconoce voz en español. Prueba con Chrome o Edge.";
     }
+    // "no-speech" y "aborted" son normales: se vuelve a escuchar solo.
   };
   rec.onend = () => { recRunning = false; if (micOn && !busy && pendingUtter === 0) setTimeout(startRec, 250); else if (mode === "listening") setMode("idle"); };
 } else {
@@ -899,7 +919,14 @@ function setMic(on) {
   const b = $("mic");
   b.setAttribute("aria-pressed", String(on));
   b.textContent = on ? "Micrófono abierto · pulsa para silenciar" : "Activar micrófono";
-  if (on) { $("micNote").textContent = ""; eleven.unlock(); startRec(); } else { stopRec(); heard = ""; if (mode === "listening") setMode("idle"); }
+  if (on) {
+    netErrors = 0;
+    $("micNote").textContent = "Abriendo el micrófono…";
+    eleven.unlock();
+    // En iPhone la voz del navegador solo suena si se ha "despertado" con un toque.
+    if (synth && !eleven.ready()) { try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; synth.speak(u); } catch {} }
+    startRec();
+  } else { stopRec(); heard = ""; $("micNote").textContent = ""; if (mode === "listening") setMode("idle"); }
 }
 $("mic").onclick = () => setMic(!micOn);
 

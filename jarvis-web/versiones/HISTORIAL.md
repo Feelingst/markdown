@@ -6,6 +6,15 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.7.1 · 2026-10-10 · Arreglos del micrófono
+ENLACE_PENDIENTE
+
+- Envía lo que dices tras un silencio aunque el navegador no marque la frase como "final". Safari en iPhone casi nunca la marca, así que antes no enviaba nada.
+- Si el navegador no llega a su servicio de reconocimiento de voz (VPN o red de empresa), deja de reintentar y explica qué hacer (probar con Microsoft Edge o quitar la VPN).
+- Avisos claros cuando no hay micrófono, cuando está bloqueado o cuando el idioma no está disponible. Muestra "Te escucho" cuando el micrófono está abierto.
+- En iPhone, la voz del navegador se activa al pulsar el micrófono, para que pueda hablar luego.
+- **Probado:** con un reconocimiento de voz simulado (estilo Safari, estilo Chrome y error de red).
+
 ## v0.7.0 · 2026-10-10 · Aplicación de escritorio
 [Descargar](https://github.com/Feelingst/markdown/archive/8c989ba45b6287cd22e96646d2fb597ff003ae6a.zip) · [ver código](https://github.com/Feelingst/markdown/tree/8c989ba45b6287cd22e96646d2fb597ff003ae6a) · commit `8c989ba`
 
