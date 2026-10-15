@@ -1,11 +1,13 @@
-# Identité de marque (à remplir une seule fois)
+# Identité de marque
 
-Le skill `video-editor` demande ces informations à la première utilisation,
-les écrit ici, puis les réutilise à chaque montage.
+Lue par le skill `video-editor` à chaque montage. Valeurs par défaut
+neutres, à remplacer par les vôtres.
 
-- Couleurs (hex) :
-- Polices (titres / sous-titres) :
-- Ton / voix :
-- Style des sous-titres (taille, position, surlignage) :
-- Dossier du kit B-roll :
-- Dossier de travail (local, pas iCloud / Dropbox) :
+- Couleur principale : #FF6A00 (orange)
+- Couleur secondaire : #1A1A1A (noir doux)
+- Police : DejaVu Sans Bold (titres et sous-titres)
+- Style des sous-titres : texte blanc, contour noir, bas de l'écran,
+  mot prononcé surligné en couleur principale
+- Ton / voix : (à compléter)
+- Dossier B-roll : (à compléter)
+- Dossier de travail (local, pas iCloud / Dropbox) : (à compléter)
