@@ -13,6 +13,11 @@ chaque montage.
 Ce skill sert surtout à créer des vidéos qui expliquent aux clients le
 détail technique des procédés de la **RDO factory**.
 
+**Avant toute vidéo RDO Factory, lis `rdo-factory.md`** (dans ce dossier) :
+les 7 modules du pipeline, leurs entrées et sorties, les messages clés et
+les formats de vidéo suggérés. N'explique rien qui n'y figure pas sans
+validation de l'utilisateur.
+
 - **Structure** : le besoin du client → les étapes du procédé, une par une →
   ce que le client y gagne (qualité, délai, coût, fiabilité).
 - **Clarté** : une idée par scène, vocabulaire technique expliqué en une
