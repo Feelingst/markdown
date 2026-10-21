@@ -5,6 +5,7 @@
   const chip = document.getElementById("file-chip");
   const convertBtn = document.getElementById("convert-btn");
   const status = document.getElementById("status");
+  const resultStatus = document.getElementById("result-status");
   const result = document.getElementById("result");
   const preview = document.getElementById("preview");
   const meta = document.getElementById("result-meta");
@@ -26,10 +27,15 @@
     shareBtn.hidden = false;
   }
 
-  function setStatus(message, type = "") {
-    status.textContent = message || "";
-    status.classList.remove("is-error", "is-busy");
-    if (type) status.classList.add(type);
+  function setStatus(message, type = "", target = status) {
+    target.textContent = message || "";
+    target.classList.remove("is-error", "is-busy");
+    if (type) target.classList.add(type);
+  }
+
+  // Messages for the copy/share actions must show next to them, in the result view
+  function setResultStatus(message, type = "") {
+    setStatus(message, type, resultStatus);
   }
 
   function showFile(file) {
@@ -147,7 +153,7 @@
       const selection = window.getSelection();
       selection.removeAllRanges();
       selection.addRange(range);
-      setStatus("Seleccionado. Mantén pulsado → Copiar.", "is-error");
+      setResultStatus("Texto seleccionado. Mantén pulsado → Copiar.");
     }
   });
 
@@ -171,7 +177,7 @@
       }
     } catch (error) {
       if (error && error.name === "AbortError") return;
-      setStatus("No se pudo compartir. Usa Copiar o Descargar.", "is-error");
+      setResultStatus("No se pudo compartir. Usa Copiar o Descargar.", "is-error");
     }
   });
 
@@ -184,6 +190,7 @@
     lastFilename = "documento.md";
     preview.textContent = "";
     setStatus("");
+    setResultStatus("");
     convertBtn.disabled = true;
     window.scrollTo({ top: 0, behavior: "smooth" });
   });

@@ -3,11 +3,11 @@
   --ink-soft: #243b45;
   --mist: #e6f0f2;
   --paper: #f4fafb;
-  --signal: #ff5a1f;
-  --signal-deep: #d9430f;
+  /* White text on --signal stays >= 4.5:1 (WCAG AA) */
+  --signal: #c2410c;
+  --signal-deep: #9a3412;
   --teal: #0f7a7a;
   --line: rgba(11, 28, 36, 0.12);
-  --glow: rgba(15, 122, 122, 0.28);
   --radius: 18px;
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "IBM Plex Sans", sans-serif;
@@ -18,6 +18,11 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* Author display rules (e.g. .hero { display: flex }) must not override [hidden] */
+[hidden] {
+  display: none !important;
 }
 
 html {
@@ -39,52 +44,6 @@ body {
     env(safe-area-inset-left, 0);
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
-}
-
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(165deg, #d7ebea 0%, #eef5f6 42%, #f7fbfb 100%);
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(40px);
-  animation: drift 14s ease-in-out infinite alternate;
-}
-
-.orb-a {
-  width: min(70vw, 520px);
-  height: min(70vw, 520px);
-  top: -12%;
-  right: -8%;
-  background: radial-gradient(circle, rgba(255, 90, 31, 0.35), transparent 68%);
-}
-
-.orb-b {
-  width: min(80vw, 640px);
-  height: min(80vw, 640px);
-  bottom: -18%;
-  left: -16%;
-  background: radial-gradient(circle, rgba(15, 122, 122, 0.28), transparent 70%);
-  animation-delay: -4s;
-}
-
-.grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.18;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  mix-blend-mode: multiply;
-}
-
-@keyframes drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-24px, 18px, 0) scale(1.06); }
 }
 
 .top {
@@ -148,23 +107,13 @@ main {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.brand-hero {
-  margin: 0 0 0.85rem;
-  font-family: var(--font-display);
-  font-size: clamp(3.4rem, 14vw, 7.5rem);
-  font-weight: 700;
-  letter-spacing: -0.06em;
-  line-height: 0.9;
-  color: var(--ink);
-}
-
 .hero h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 5.5vw, 3.1rem);
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 1.08;
+  font-size: clamp(2.4rem, 9vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
   max-width: 14ch;
 }
 
@@ -182,13 +131,10 @@ main {
 }
 
 .dropzone-inner {
-  position: relative;
-  overflow: hidden;
   padding: 1.6rem 1.25rem;
   border: 1.5px dashed rgba(11, 28, 36, 0.28);
   border-radius: var(--radius);
   background: rgba(244, 250, 251, 0.72);
-  backdrop-filter: blur(10px);
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
@@ -202,24 +148,8 @@ main {
   transform: translateY(-2px);
 }
 
-.drop-pulse {
-  position: absolute;
-  inset: auto auto -30% -10%;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--glow), transparent 70%);
-  animation: pulse 3.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.12); }
-}
-
 .drop-title {
   margin: 0;
-  position: relative;
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 600;
@@ -228,18 +158,19 @@ main {
 
 .drop-sub {
   margin: 0.35rem 0 1rem;
-  position: relative;
   color: var(--ink-soft);
   font-size: 0.95rem;
 }
 
 .drop-cta {
-  position: relative;
+  align-self: flex-start;
   display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--teal);
-  border-bottom: 1.5px solid currentColor;
 }
 
 .file-chip {
@@ -306,6 +237,14 @@ main {
   margin: 0;
   font-size: 0.92rem;
   color: var(--ink-soft);
+}
+
+.result .status {
+  margin-bottom: 0.75rem;
+}
+
+.result .status:empty {
+  display: none;
 }
 
 .status.is-error {
@@ -419,10 +358,6 @@ main {
     justify-content: flex-start;
     padding-top: 1.1rem;
     padding-bottom: max(2rem, env(safe-area-inset-bottom));
-  }
-
-  .brand-hero {
-    font-size: clamp(3.2rem, 18vw, 5.2rem);
   }
 
   .dropzone-inner {
