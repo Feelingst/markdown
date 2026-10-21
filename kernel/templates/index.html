@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0B1C24" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -18,12 +18,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-  <div class="atmosphere" aria-hidden="true">
-    <div class="orb orb-a"></div>
-    <div class="orb orb-b"></div>
-    <div class="grain"></div>
-  </div>
-
   <header class="top">
     <a class="brand" href="/" aria-label="Kernel inicio">
       <span class="brand-mark" aria-hidden="true"></span>
@@ -34,7 +28,6 @@
 
   <main>
     <section class="hero" id="upload-section">
-      <p class="brand-hero">Kernel</p>
       <h1>Menos tokens.<br />Más señal.</h1>
       <p class="lede">
         Desde el iPhone: elige un PDF, Word, Excel u otro archivo y recibe Markdown limpio para ChatGPT, Claude u otras IAs.
@@ -49,7 +42,6 @@
           hidden
         />
         <div class="dropzone-inner" id="drop-surface" tabindex="0" role="button" aria-controls="file-input" aria-label="Elegir archivo">
-          <span class="drop-pulse" aria-hidden="true"></span>
           <p class="drop-title">Toca para elegir un archivo</p>
           <p class="drop-sub">Archivos, Descargas, iCloud Drive o tu correo</p>
           <span class="drop-cta">Abrir archivos</span>
@@ -76,6 +68,7 @@
           <a class="primary link-btn" id="download-btn" href="#">Descargar .md</a>
         </div>
       </div>
+      <p class="status" id="result-status" role="status" aria-live="polite"></p>
       <pre class="preview" id="preview" tabindex="0"></pre>
       <button type="button" class="ghost again" id="again-btn">Convertir otro archivo</button>
     </section>
