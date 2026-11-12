@@ -7,7 +7,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 ---
 
 ## v0.8.1 · 2026-11-12 · Arreglo del panel y voces naturales
-ENLACE_PENDIENTE
+[Descargar](https://github.com/Feelingst/markdown/archive/2a7c9a7a6a9cd8e663f07fbdd5b422cd96b71be7.zip) · [ver código](https://github.com/Feelingst/markdown/tree/2a7c9a7a6a9cd8e663f07fbdd5b422cd96b71be7) · commit `2a7c9a7`
 
 - Un nombre de voz largo (por ejemplo "Microsoft Helena - Spanish (Spain)") ensanchaba el panel izquierdo y dejaba fuera los botones del micrófono y de la voz. Ahora todo cabe.
 - Elige primero las voces "Online (Natural)" de Edge, que suenan más humanas.
