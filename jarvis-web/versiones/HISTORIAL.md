@@ -7,7 +7,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 ---
 
 ## v0.9.1 · 2026-11-12 · Diagnóstico de Home Assistant
-ENLACE_PENDIENTE
+[Descargar](https://github.com/Feelingst/markdown/archive/c0e9301408977f1414b0da340fdbe8fa4b8a07c9.zip) · [ver código](https://github.com/Feelingst/markdown/tree/c0e9301408977f1414b0da340fdbe8fa4b8a07c9) · commit `c0e9301`
 
 - Si no conecta con Home Assistant, Jarvis dice la causa exacta: token rechazado, dirección que Windows no encuentra (típico con `homeassistant.local`, mejor usar la IP), falta el permiso `cors_allowed_origins`, o Jarvis abierto sin el lanzador.
 - La dirección de Home Assistant se acepta sin `http://` (por ejemplo `192.168.1.50:8123`).
