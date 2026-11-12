@@ -114,6 +114,9 @@ select, input[type="password"], input[type="text"] {
   display: flex; flex-direction: column; min-height: 0; min-width: 0;
 }
 .fields { display: grid; gap: 8px; }
+.setup h2 + label, .setup .check { margin-top: 2px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.check input { width: 16px; height: 16px; accent-color: var(--gold); }
 .setup { padding: 20px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; max-height: 70%; overflow-y: auto; flex-shrink: 0; }
 .setup h2 { font-family: var(--font-display); font-size: 16px; letter-spacing: .06em; margin: 0; }
 .log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -249,6 +252,15 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
         <p class="note" id="keyNote">Créala en console.anthropic.com → API Keys.</p>
       </div>
+      <h2>Conexiones</h2>
+      <label class="check"><input type="checkbox" id="netOn"> Internet: el tiempo y Wikipedia (gratis, sin claves)</label>
+      <label for="city">Tu ciudad (para el tiempo)</label>
+      <input type="text" id="city" placeholder="p. ej. Madrid" autocomplete="off">
+      <label for="haUrl">Dirección de Home Assistant</label>
+      <input type="text" id="haUrl" placeholder="http://homeassistant.local:8123" autocomplete="off" spellcheck="false">
+      <label for="haToken">Token de acceso de Home Assistant</label>
+      <input type="password" id="haToken" placeholder="Token de larga duración" autocomplete="off">
+      <p class="note" id="haNote">Créalo en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración.</p>
       <label for="elKey">Clave de API de ElevenLabs (opcional, de pago)</label>
       <input type="password" id="elKey" placeholder="sk_…" autocomplete="off">
       <label for="elVoice">ID de la voz de ElevenLabs</label>
@@ -290,7 +302,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.8.1";
+const VERSION = "0.9.0";
 const MODEL = "claude-sonnet-5";                 // cerebro "claude" (API de pago)
 const OLLAMA_DEFAULT_MODEL = "llama3.2:3b";       // cerebro "ollama" (gratis, local)
 const OLLAMA_DEFAULT_URL = "http://localhost:11434";
@@ -300,8 +312,23 @@ const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de
 - Tono: elegante, eficiente, cálido, con un toque sutil de humor británico.
 - Tus respuestas se leen en voz alta y lo que oyes de Tomás llega por reconocimiento de voz, así que puede tener errores de transcripción: interpreta la intención.
 - Sé breve (1 a 4 frases salvo que Tomás pida detalle). Sin Markdown, sin listas, sin emojis.
-- No tienes acceso a internet ni a dispositivos; si te piden algo que no puedes hacer, dilo con gracia y ofrece una alternativa.
+- Si te piden algo que no puedes hacer, dilo con gracia y ofrece una alternativa.
 - Tienes un rostro que muestra emociones. Empieza SIEMPRE tu respuesta con una sola etiqueta entre corchetes que diga cómo te sientes al responder, elegida de esta lista: [neutral] [alegre] [divertida] [pensativa] [sorprendida] [preocupada]. Justo después, la respuesta. La etiqueta no se lee en voz alta.`;
+// Instrucciones completas: las fijas, más las herramientas disponibles y la fecha (el modelo no la sabe).
+function systemPrompt(tools) {
+  const names = tools.map(t => t.function.name);
+  const lines = [];
+  if (names.includes("casa")) lines.push("- Para encender o apagar cosas de la casa, el clima, la tele, la música, el robot aspirador, la lista de la compra o preguntar cómo están, usa la herramienta casa con la orden en español.");
+  if (names.includes("tiempo")) lines.push("- Para el tiempo o la previsión, usa la herramienta tiempo.");
+  if (names.includes("buscar")) lines.push("- Para datos que no sepas con seguridad (personas, lugares, historia, ciencia), usa la herramienta buscar.");
+  if (lines.length) lines.unshift("- Usa las herramientas solo cuando hagan falta; para charlar no las necesitas. Cuando recibas su resultado, responde a Tomás con tus palabras, en una o dos frases.");
+  else lines.push("- No tienes acceso a internet ni a dispositivos.");
+  const now = new Date();
+  const fecha = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const hora = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  return SYSTEM + "\n" + lines.join("\n") + `\n- Hoy es ${fecha} y son las ${hora}.`;
+}
+
 const MOODS = {
   neutral:     { label: "",            smile: .18, brow: 0,   tilt: 0,    color: "#e8b65a" },
   alegre:      { label: "alegre",      smile: .75, brow: .2,  tilt: .03,  color: "#f0c25e" },
@@ -320,7 +347,7 @@ const store = {
 
 const turns = [];
 $("version").textContent = "Jarvis v" + VERSION;
-setTimeout(() => { if (brainKind() === "ollama") checkOllama(true); }, 0);
+setTimeout(() => { if (brainKind() === "ollama") checkOllama(true); if (haReady()) checkHA(true); }, 0);
 let client = null, stream = null, busy = false;
 
 /* ---------- Estado visual ---------- */
@@ -575,6 +602,10 @@ function paintSetup() {
   $("brain").value = brainKind();
   $("ollamaModel").value = store.get("jarvis-ollama-model") || "";
   $("ollamaUrl").value = store.get("jarvis-ollama-url") || "";
+  $("netOn").checked = internetOn();
+  $("city").value = store.get("jarvis-city") || "";
+  $("haUrl").value = store.get("jarvis-ha-url") || "";
+  $("haToken").placeholder = store.get("jarvis-ha-token") ? "Token guardado" : "Token de larga duración";
   paintBrainFields();
   $("keyNote").textContent = client ? "Clave guardada. Escribe otra solo si quieres cambiarla." : "Créala en console.anthropic.com → API Keys.";
   $("elVoice").value = store.get("jarvis-el-voice") || "";
@@ -593,6 +624,11 @@ $("setup").onsubmit = (e) => {
   store.set("jarvis-brain", $("brain").value);
   store.set("jarvis-ollama-model", $("ollamaModel").value.trim() || null);
   store.set("jarvis-ollama-url", $("ollamaUrl").value.trim() || null);
+  store.set("jarvis-internet", $("netOn").checked ? "1" : "0");
+  store.set("jarvis-city", $("city").value.trim() || null);
+  store.set("jarvis-ha-url", $("haUrl").value.trim().replace(/\/+$/, "") || null);
+  if ($("haToken").value.trim()) store.set("jarvis-ha-token", $("haToken").value.trim());
+  $("haToken").value = "";
   if (simliKey) store.set("jarvis-simli-key", simliKey);
   store.set("jarvis-simli-face", simliFace || null);
   $("simliKey").value = "";
@@ -604,6 +640,7 @@ $("setup").onsubmit = (e) => {
   if (brainKind() === "claude" && !client) { $("key").focus(); return; }
   $("setup").hidden = true;
   if (brainKind() === "ollama") checkOllama(true);
+  if (haReady()) checkHA(true);
   paintVoiceMode();
   simli.paint();
 };
@@ -1005,7 +1042,102 @@ function cleanModelText(t) {
   return t.replace(/\*+|__|`/g, "").replace(/^\s*#+\s*/gm, "").replace(/\s*\p{Extended_Pictographic}\uFE0F?/gu, "").replace(/^\s+/, "");
 }
 
-async function ollamaChat(messages, onText, signal) {
+/* ---------- Conexiones: Home Assistant, el tiempo y Wikipedia ---------- */
+// Declaradas como funciones para poder usarlas desde los ajustes, que se pintan antes.
+function internetOn() { return store.get("jarvis-internet") !== "0"; }
+function haUrl() { return store.get("jarvis-ha-url") || ""; }
+function haReady() { return !!(haUrl() && store.get("jarvis-ha-token")); }
+
+async function getJSON(url, opts = {}) {
+  const res = await fetch(url, { ...opts, signal: opts.signal || AbortSignal.timeout(15000) });
+  if (!res.ok) throw Object.assign(new Error("HTTP " + res.status), { status: res.status });
+  return res.json();
+}
+
+// Pasa la orden a Assist, el asistente de Home Assistant, que ya conoce tus dispositivos.
+async function haConversation({ orden }) {
+  const data = await getJSON(haUrl() + "/api/conversation/process", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + store.get("jarvis-ha-token"), "Content-Type": "application/json" },
+    body: JSON.stringify({ text: String(orden || ""), language: "es" }),
+  });
+  return { respuesta_de_home_assistant: data?.response?.speech?.plain?.speech || "Hecho." };
+}
+
+async function checkHA(report) {
+  const note = $("haNote");
+  try {
+    await getJSON(haUrl() + "/api/", { headers: { Authorization: "Bearer " + store.get("jarvis-ha-token") }, signal: AbortSignal.timeout(5000) });
+    note.textContent = "Home Assistant conectado.";
+    return true;
+  } catch (e) {
+    note.textContent = e.status === 401
+      ? "Home Assistant rechaza el token. Crea uno nuevo y pégalo."
+      : `No puedo conectar con ${haUrl()}. Revisa la dirección y que Home Assistant permita a Jarvis conectarse (cors_allowed_origins, ver el README).`;
+    if (report) addError(note.textContent);
+    return false;
+  }
+}
+
+const WEATHER = { 0: "despejado", 1: "casi despejado", 2: "parcialmente nublado", 3: "nublado", 45: "niebla", 48: "niebla", 51: "llovizna", 53: "llovizna", 55: "llovizna intensa", 61: "lluvia débil", 63: "lluvia", 65: "lluvia fuerte", 71: "nieve débil", 73: "nieve", 75: "nieve fuerte", 80: "chubascos", 81: "chubascos", 82: "chubascos fuertes", 95: "tormenta", 96: "tormenta con granizo", 99: "tormenta con granizo" };
+
+// El tiempo con Open-Meteo: gratis y sin clave.
+async function weather({ lugar }) {
+  const place = String(lugar || store.get("jarvis-city") || "").trim();
+  if (!place) return { error: "No sé de qué ciudad. Pregunta a Tomás o que la ponga en Ajustes." };
+  const geo = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=${encodeURIComponent(place)}`);
+  const g = geo.results?.[0];
+  if (!g) return { error: `No encuentro el lugar "${place}".` };
+  const w = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&timezone=auto&forecast_days=3` +
+    "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max");
+  const d = w.daily;
+  return {
+    lugar: `${g.name}${g.admin1 ? ", " + g.admin1 : ""}`,
+    ahora: { temperatura_c: w.current.temperature_2m, cielo: WEATHER[w.current.weather_code] || "variable", humedad: w.current.relative_humidity_2m, viento_kmh: w.current.wind_speed_10m },
+    proximos_dias: d.time.map((t, i) => ({ dia: t, cielo: WEATHER[d.weather_code[i]] || "variable", max_c: d.temperature_2m_max[i], min_c: d.temperature_2m_min[i], prob_lluvia: d.precipitation_probability_max[i] })),
+  };
+}
+
+// Resumen de Wikipedia en español: gratis y sin clave.
+async function wikipedia({ consulta }) {
+  const q = String(consulta || "").trim();
+  const found = await getJSON(`https://es.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1&srsearch=${encodeURIComponent(q)}`);
+  const title = found.query?.search?.[0]?.title;
+  if (!title) return { error: `No encuentro nada sobre "${q}" en Wikipedia.` };
+  const sum = await getJSON(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
+  return { titulo: title, resumen: String(sum.extract || "").slice(0, 700) };
+}
+
+const TOOLS = [
+  { ready: haReady, run: haConversation, label: "Hablando con Home Assistant…",
+    def: { type: "function", function: { name: "casa",
+      description: "Controla la casa de Tomás o pregunta su estado mediante Home Assistant: luces, calefacción, televisión, HomePod, robot aspirador, lista de la compra. Pasa la orden en español tal como la diría Tomás, por ejemplo 'enciende la luz de Tomás' o '¿qué temperatura hay en el salón?'.",
+      parameters: { type: "object", properties: { orden: { type: "string", description: "La orden o pregunta para la casa, en español" } }, required: ["orden"] } } } },
+  { ready: internetOn, run: weather, label: "Mirando el tiempo…",
+    def: { type: "function", function: { name: "tiempo",
+      description: "Da el tiempo actual y la previsión de los próximos 3 días para una ciudad. Si Tomás no dice ciudad, deja 'lugar' vacío y se usa la suya.",
+      parameters: { type: "object", properties: { lugar: { type: "string", description: "Ciudad, por ejemplo 'Madrid'" } } } } } },
+  { ready: internetOn, run: wikipedia, label: "Buscando en Wikipedia…",
+    def: { type: "function", function: { name: "buscar",
+      description: "Busca en Wikipedia en español y devuelve un resumen. Úsala para datos sobre personas, lugares, historia o ciencia que no sepas con seguridad.",
+      parameters: { type: "object", properties: { consulta: { type: "string", description: "Qué buscar, en pocas palabras" } }, required: ["consulta"] } } } },
+];
+
+async function runTool(call) {
+  const name = call.function?.name, tool = TOOLS.find(t => t.def.function.name === name);
+  if (!tool || !tool.ready()) return { error: `La herramienta ${name} no está disponible.` };
+  let args = call.function.arguments || {};
+  if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
+  try { return await tool.run(args); }
+  catch (e) {
+    if (name === "casa") return { error: e.status === 401 ? "Home Assistant rechaza el token." : "No puedo conectar con Home Assistant." };
+    return { error: "No he podido consultarlo: " + (e.message || e) };
+  }
+}
+
+// Una vuelta de conversación con Ollama: devuelve el texto y las herramientas que pide usar.
+async function ollamaRound(messages, tools, onText, signal) {
   const res = await fetch(ollamaUrl() + "/api/chat", {
     method: "POST",
     signal,
@@ -1014,7 +1146,8 @@ async function ollamaChat(messages, onText, signal) {
       model: ollamaModel(),
       stream: true,
       keep_alive: "30m", // el modelo se queda cargado entre frases
-      messages: [{ role: "system", content: SYSTEM }, ...messages],
+      messages,
+      ...(tools.length ? { tools } : {}),
       options: { temperature: 0.7, num_predict: 250, num_ctx: 4096 },
     }),
   });
@@ -1025,6 +1158,7 @@ async function ollamaChat(messages, onText, signal) {
   }
   const reader = res.body.getReader(), dec = new TextDecoder();
   let buf = "", raw = "";
+  const calls = [];
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -1036,7 +1170,25 @@ async function ollamaChat(messages, onText, signal) {
       if (!line) continue;
       const j = JSON.parse(line);
       if (j.error) throw Object.assign(new Error(j.error), { ollama: true });
-      if (j.message?.content) { raw += j.message.content; onText(cleanModelText(raw)); }
+      if (j.message?.tool_calls) calls.push(...j.message.tool_calls);
+      if (j.message?.content) { raw += j.message.content; if (!calls.length) onText(cleanModelText(raw)); }
+    }
+  }
+  return { raw, calls };
+}
+
+async function ollamaChat(messages, onText, signal, onTool) {
+  const tools = TOOLS.filter(t => t.ready()).map(t => t.def);
+  const msgs = [{ role: "system", content: systemPrompt(tools) }, ...messages];
+  for (let round = 0; round < 3; round++) {
+    const { raw, calls } = await ollamaRound(msgs, round < 2 ? tools : [], onText, signal);
+    if (!calls.length) return { refusal: false };
+    msgs.push({ role: "assistant", content: raw, tool_calls: calls });
+    for (const call of calls) {
+      const tool = TOOLS.find(t => t.def.function.name === call.function?.name);
+      onTool(tool ? tool.label : "Consultando…");
+      const result = await runTool(call);
+      msgs.push({ role: "tool", tool_name: call.function?.name, content: JSON.stringify(result) });
     }
   }
   return { refusal: false };
@@ -1046,7 +1198,7 @@ async function claudeChat(messages, onText, signal) {
   const s = client.messages.stream({
     model: MODEL,
     max_tokens: 4096,
-    system: SYSTEM,
+    system: systemPrompt([]),
     output_config: { effort: "low" },
     messages,
   }, { signal });
@@ -1137,7 +1289,7 @@ async function send(text) {
       if (m) { speakChunk(m[0]); spoken += m[0].length; }
     };
     const result = brain === "ollama"
-      ? await ollamaChat(turns.slice(), onText, ctl.signal)
+      ? await ollamaChat(turns.slice(), onText, ctl.signal, (label) => { out.classList.add("pending"); out.textContent = label; })
       : await claudeChat(turns.slice(), onText, ctl.signal);
     if (result.refusal) {
       bubble.remove(); stopSpeaking();

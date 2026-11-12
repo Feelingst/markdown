@@ -51,6 +51,30 @@ Si Windows avisa de que el archivo viene de internet, pulsa "Más información �
 
 También puedes seguir abriendo `index.html` directamente con doble clic, pero en ese modo Chrome puede pedir permiso del micrófono cada vez.
 
+## Conexiones
+
+Se configuran en **Ajustes y claves** → **Conexiones**. Jarvis decide solo cuándo usarlas: si le preguntas por el tiempo, mira el tiempo; si le pides encender una luz, se lo pide a Home Assistant; si charláis, no usa ninguna.
+
+### Internet: el tiempo y Wikipedia (gratis, activado de serie)
+- **El tiempo:** con [Open-Meteo](https://open-meteo.com), sin clave. Escribe tu ciudad en Ajustes para que "¿qué tiempo hace?" funcione sin decirla.
+- **Wikipedia en español:** para preguntas sobre personas, lugares, historia o ciencia.
+- No es un buscador general: no sabe noticias ni resultados deportivos.
+
+### Home Assistant (gratis)
+Jarvis pasa tus órdenes de casa a **Assist**, el asistente de Home Assistant, que ya conoce tus dispositivos y entiende español ("enciende la luz de Tomás", "¿qué temperatura hay en el salón?", "pon el robot a limpiar").
+
+1. **Crea un token:** en Home Assistant, abre tu perfil (abajo a la izquierda) → **Seguridad** → **Tokens de acceso de larga duración** → **Crear token**. Ponle de nombre "Jarvis" y copia el token, que solo se muestra una vez.
+2. **Deja que Jarvis se conecte:** añade esto al final de `configuration.yaml` (por ejemplo con el complemento **File editor**, en Ajustes → Complementos):
+   ```yaml
+   http:
+     cors_allowed_origins:
+       - http://localhost:8765
+   ```
+   Si ya tienes una sección `http:`, añade solo las líneas de `cors_allowed_origins`. Después reinicia Home Assistant (Ajustes → Sistema → Reiniciar).
+3. **En Jarvis**, en Ajustes → Conexiones: pon la dirección de Home Assistant (normalmente `http://homeassistant.local:8123`, o la IP, por ejemplo `http://192.168.1.50:8123`) y pega el token. Al guardar, Jarvis comprueba la conexión y te dice si algo falla.
+
+Lo que Home Assistant pueda hacer con Assist, Jarvis lo puede hacer por voz. Si una orden no funciona, prueba a decirla con el nombre exacto del dispositivo tal como aparece en Home Assistant.
+
 ## El avatar
 
 Mientras Jarvis habla, el avatar reacciona a lo que dice:

@@ -6,6 +6,16 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.9.0 · 2026-11-12 · Conexiones: casa, tiempo y Wikipedia
+ENLACE_PENDIENTE
+
+- **Home Assistant:** con la dirección y un token, Jarvis pasa tus órdenes de casa a Assist ("enciende la luz de Tomás", "¿qué temperatura hay en el salón?").
+- **El tiempo:** tiempo actual y previsión de 3 días con Open-Meteo, gratis y sin clave. Ajuste nuevo: tu ciudad.
+- **Wikipedia en español:** resúmenes para preguntas sobre personas, lugares, historia o ciencia.
+- Jarvis decide solo cuándo usar cada conexión (herramientas de Ollama) y muestra lo que está haciendo ("Mirando el tiempo…").
+- Ahora sabe la fecha y la hora actuales.
+- **Probado:** con Ollama, Home Assistant, Open-Meteo y Wikipedia simulados. **Sin probar:** con tu Home Assistant real y con el modelo real (los modelos pequeños a veces eligen mal la herramienta).
+
 ## v0.8.1 · 2026-11-12 · Arreglo del panel y voces naturales
 [Descargar](https://github.com/Feelingst/markdown/archive/2a7c9a7a6a9cd8e663f07fbdd5b422cd96b71be7.zip) · [ver código](https://github.com/Feelingst/markdown/tree/2a7c9a7a6a9cd8e663f07fbdd5b422cd96b71be7) · commit `2a7c9a7`
 
