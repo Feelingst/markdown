@@ -6,6 +6,17 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.8.0 · 2026-11-12 · Jarvis gratis con Ollama
+ENLACE_PENDIENTE
+
+- El cerebro por defecto pasa a ser **Ollama**: un modelo de IA en tu propio ordenador (`llama3.2:3b` de serie), gratis y sin internet. Claude queda como opción de pago en los ajustes.
+- Ajustes nuevos: cerebro (Ollama o Claude), modelo de Ollama (con la lista de los que tienes descargados) y dirección de Ollama.
+- Al abrirse, Jarvis comprueba que Ollama está abierto y que el modelo está descargado, y si no, dice exactamente qué hacer.
+- Limpia lo que escriben los modelos pequeños antes de leerlo en voz alta (Markdown, emojis, razonamiento interno).
+- Con Ollama se envía menos historial para responder más rápido en ordenadores modestos.
+- El lanzador de Windows abre Edge antes que Chrome.
+- **Probado:** con Ollama simulado (respuesta normal, Ollama apagado, modelo sin descargar) y Claude simulado. **Sin probar:** con Ollama real en tu PC.
+
 ## v0.7.2 · 2026-10-10 · Aviso de saldo
 [Descargar](https://github.com/Feelingst/markdown/archive/e760470982d7e72b8069ebc78f3bfb750a0491fe.zip) · [ver código](https://github.com/Feelingst/markdown/tree/e760470982d7e72b8069ebc78f3bfb750a0491fe) · commit `e760470`
 

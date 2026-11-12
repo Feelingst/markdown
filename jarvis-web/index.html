@@ -112,6 +112,7 @@ select, input[type="password"], input[type="text"] {
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   display: flex; flex-direction: column; min-height: 0; min-width: 0;
 }
+.fields { display: grid; gap: 8px; }
 .setup { padding: 20px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; max-height: 70%; overflow-y: auto; flex-shrink: 0; }
 .setup h2 { font-family: var(--font-display); font-size: 16px; letter-spacing: .06em; margin: 0; }
 .log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -229,10 +230,25 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
   <section class="chat" aria-label="Conversación">
     <form class="setup" id="setup" hidden>
       <h2>Ajustes de Jarvis</h2>
-      <label for="key">Clave de API de Anthropic</label>
-      <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
-      <p class="note" id="keyNote">Créala en console.anthropic.com → API Keys.</p>
-      <label for="elKey">Clave de API de ElevenLabs (opcional)</label>
+      <label for="brain">Cerebro de Jarvis</label>
+      <select id="brain">
+        <option value="ollama">Ollama · gratis, en tu ordenador</option>
+        <option value="claude">Claude · API de Anthropic (de pago)</option>
+      </select>
+      <div class="fields" id="ollamaFields">
+        <label for="ollamaModel">Modelo de Ollama</label>
+        <input type="text" id="ollamaModel" list="ollamaModels" placeholder="llama3.2:3b" autocomplete="off" spellcheck="false">
+        <datalist id="ollamaModels"></datalist>
+        <label for="ollamaUrl">Dirección de Ollama</label>
+        <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
+        <p class="note" id="ollamaNote">Instala Ollama desde ollama.com y descarga el modelo con: ollama pull llama3.2:3b</p>
+      </div>
+      <div class="fields" id="claudeFields" hidden>
+        <label for="key">Clave de API de Anthropic</label>
+        <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off">
+        <p class="note" id="keyNote">Créala en console.anthropic.com → API Keys.</p>
+      </div>
+      <label for="elKey">Clave de API de ElevenLabs (opcional, de pago)</label>
       <input type="password" id="elKey" placeholder="sk_…" autocomplete="off">
       <label for="elVoice">ID de la voz de ElevenLabs</label>
       <input type="text" id="elVoice" placeholder="p. ej. 21m00Tcm4TlvDq8ikWAM" autocomplete="off" spellcheck="false">
@@ -241,7 +257,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         <button class="btn" type="submit">Guardar</button>
         <button class="linkish" type="button" id="elClear">Quitar ElevenLabs</button>
       </div>
-      <label for="simliKey">Clave de API de Simli (opcional, vídeo realista)</label>
+      <label for="simliKey">Clave de API de Simli (opcional, de pago, vídeo realista)</label>
       <input type="password" id="simliKey" placeholder="Clave de Simli" autocomplete="off">
       <label for="simliFace">Face ID de Simli</label>
       <input type="text" id="simliFace" placeholder="ID de la cara creada en Simli" autocomplete="off" spellcheck="false">
@@ -250,7 +266,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
         <button class="btn" type="submit">Guardar</button>
         <button class="linkish" type="button" id="simliClear">Quitar Simli</button>
       </div>
-      <p class="note">Las claves se guardan solo en este navegador y se envían únicamente a api.anthropic.com, api.elevenlabs.io y api.simli.ai.</p>
+      <p class="note">Las claves se guardan solo en este navegador y se envían únicamente a api.anthropic.com, api.elevenlabs.io y api.simli.ai. Con Ollama no hace falta ninguna.</p>
     </form>
     <div class="log" id="log" aria-live="polite">
       <div class="msg her">
@@ -273,8 +289,10 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.7.2";
-const MODEL = "claude-sonnet-5";
+const VERSION = "0.8.0";
+const MODEL = "claude-sonnet-5";                 // cerebro "claude" (API de pago)
+const OLLAMA_DEFAULT_MODEL = "llama3.2:3b";       // cerebro "ollama" (gratis, local)
+const OLLAMA_DEFAULT_URL = "http://localhost:11434";
 const SYSTEM = `Eres Jarvis, la asistente personal de inteligencia artificial de Tomás, inspirada en el Jarvis de Tony Stark, con personalidad femenina: una mujer de unos 40 años, segura y serena.
 - Habla siempre en español, en femenino cuando te refieras a ti misma.
 - Llama al usuario "Tomás" con naturalidad, sin repetirlo en cada frase.
@@ -301,6 +319,7 @@ const store = {
 
 const turns = [];
 $("version").textContent = "Jarvis v" + VERSION;
+setTimeout(() => { if (brainKind() === "ollama") checkOllama(true); }, 0);
 let client = null, stream = null, busy = false;
 
 /* ---------- Estado visual ---------- */
@@ -541,8 +560,21 @@ $("photoReset").onclick = () => { store.set("jarvis-foto", null); $("photoReset"
 /* ---------- Clave de API ---------- */
 function connect(key) { client = key ? new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }) : null; }
 connect(store.get("jarvis-key"));
-$("setup").hidden = !!client;
+const brainKind = () => store.get("jarvis-brain") || "ollama";
+const ollamaModel = () => store.get("jarvis-ollama-model") || OLLAMA_DEFAULT_MODEL;
+const ollamaUrl = () => (store.get("jarvis-ollama-url") || OLLAMA_DEFAULT_URL).replace(/\/+$/, "");
+$("setup").hidden = !(brainKind() === "claude" && !client);
+function paintBrainFields() {
+  const claude = $("brain").value === "claude";
+  $("claudeFields").hidden = !claude;
+  $("ollamaFields").hidden = claude;
+}
+$("brain").onchange = paintBrainFields;
 function paintSetup() {
+  $("brain").value = brainKind();
+  $("ollamaModel").value = store.get("jarvis-ollama-model") || "";
+  $("ollamaUrl").value = store.get("jarvis-ollama-url") || "";
+  paintBrainFields();
   $("keyNote").textContent = client ? "Clave guardada. Escribe otra solo si quieres cambiarla." : "Créala en console.anthropic.com → API Keys.";
   $("elVoice").value = store.get("jarvis-el-voice") || "";
   $("elClear").hidden = !store.get("jarvis-el-key");
@@ -552,11 +584,14 @@ function paintSetup() {
   $("simliClear").hidden = !store.get("jarvis-simli-key");
 }
 paintSetup();
-$("keyBtn").onclick = () => { paintSetup(); $("setup").hidden = false; $("key").focus(); };
+$("keyBtn").onclick = () => { paintSetup(); $("setup").hidden = false; $("brain").focus(); checkOllama(false); };
 $("setup").onsubmit = (e) => {
   e.preventDefault();
   const key = $("key").value.trim(), elKey = $("elKey").value.trim(), elVoice = $("elVoice").value.trim();
   const simliKey = $("simliKey").value.trim(), simliFace = $("simliFace").value.trim();
+  store.set("jarvis-brain", $("brain").value);
+  store.set("jarvis-ollama-model", $("ollamaModel").value.trim() || null);
+  store.set("jarvis-ollama-url", $("ollamaUrl").value.trim() || null);
   if (simliKey) store.set("jarvis-simli-key", simliKey);
   store.set("jarvis-simli-face", simliFace || null);
   $("simliKey").value = "";
@@ -565,8 +600,9 @@ $("setup").onsubmit = (e) => {
   store.set("jarvis-el-voice", elVoice || null);
   $("key").value = ""; $("elKey").value = "";
   paintSetup();
-  if (!client) { $("key").focus(); return; }
+  if (brainKind() === "claude" && !client) { $("key").focus(); return; }
   $("setup").hidden = true;
+  if (brainKind() === "ollama") checkOllama(true);
   paintVoiceMode();
   simli.paint();
 };
@@ -959,7 +995,95 @@ form.onsubmit = (e) => {
   if (text) send(text);
 };
 
+/* ---------- Cerebro: Ollama (local, gratis) o Claude (API de pago) ---------- */
+
+// Limpia lo que escriben los modelos pequeños: razonamiento <think>, Markdown y emojis.
+function cleanModelText(t) {
+  t = t.replace(/<think>[\s\S]*?<\/think>/g, "");
+  if (/<think>/.test(t)) return "";
+  return t.replace(/\*+|__|`/g, "").replace(/^\s*#+\s*/gm, "").replace(/\s*\p{Extended_Pictographic}\uFE0F?/gu, "").replace(/^\s+/, "");
+}
+
+async function ollamaChat(messages, onText, signal) {
+  const res = await fetch(ollamaUrl() + "/api/chat", {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: ollamaModel(),
+      stream: true,
+      keep_alive: "30m", // el modelo se queda cargado entre frases
+      messages: [{ role: "system", content: SYSTEM }, ...messages],
+      options: { temperature: 0.7, num_predict: 250, num_ctx: 4096 },
+    }),
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { detail = (await res.json()).error || ""; } catch {}
+    throw Object.assign(new Error(detail || "HTTP " + res.status), { ollama: true, status: res.status });
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", raw = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (!line) continue;
+      const j = JSON.parse(line);
+      if (j.error) throw Object.assign(new Error(j.error), { ollama: true });
+      if (j.message?.content) { raw += j.message.content; onText(cleanModelText(raw)); }
+    }
+  }
+  return { refusal: false };
+}
+
+async function claudeChat(messages, onText, signal) {
+  const s = client.messages.stream({
+    model: MODEL,
+    max_tokens: 4096,
+    system: SYSTEM,
+    output_config: { effort: "low" },
+    messages,
+  }, { signal });
+  s.on("text", (_delta, snapshot) => onText(snapshot));
+  const msg = await s.finalMessage();
+  return { refusal: msg.stop_reason === "refusal" };
+}
+
+// Comprueba que Ollama responde y que el modelo elegido está descargado.
+async function checkOllama(report) {
+  const note = $("ollamaNote"), model = ollamaModel();
+  try {
+    const res = await fetch(ollamaUrl() + "/api/tags", { signal: AbortSignal.timeout(4000) });
+    const names = ((await res.json()).models || []).map(m => m.name);
+    $("ollamaModels").innerHTML = "";
+    for (const n of names) $("ollamaModels").append(new Option(n, n));
+    const has = names.some(n => n === model || n === model + ":latest");
+    note.textContent = has ? `Ollama conectado. Modelos descargados: ${names.join(", ")}.`
+      : `Ollama conectado, pero falta el modelo "${model}". En una terminal: ollama pull ${model}`;
+    if (!has && report) addError(`Ollama está abierto, pero no tienes el modelo "${model}". Abre una terminal (PowerShell) y escribe: ollama pull ${model}`);
+    return has;
+  } catch {
+    note.textContent = `No encuentro Ollama en ${ollamaUrl()}. Instálalo desde ollama.com y comprueba que está abierto.`;
+    if (report) addError(ollamaDownText());
+    return false;
+  }
+}
+const ollamaDownText = () => `No encuentro Ollama en ${ollamaUrl()}. Comprueba que está instalado (ollama.com) y abierto: verás el icono de la llama junto al reloj. Abre Jarvis con Jarvis.bat, no desde un enlace de internet.`;
+
+function ollamaErrorText(err) {
+  if (err instanceof TypeError) return ollamaDownText();
+  if (err.status === 404 || /not found/i.test(err.message)) return `No tienes descargado el modelo "${ollamaModel()}". Abre una terminal (PowerShell) y escribe: ollama pull ${ollamaModel()}`;
+  if (/memory|memoria/i.test(err.message)) return `Tu ordenador no tiene memoria libre para el modelo "${ollamaModel()}". Cierra programas o elige uno más pequeño en Ajustes (por ejemplo gemma3:1b).`;
+  return "Ollama ha fallado: " + err.message;
+}
+
 function errorText(err) {
+  if (brainKind() === "ollama") return ollamaErrorText(err);
   if (err instanceof Anthropic.AuthenticationError) return "La clave de API no es válida. Pulsa \"Cambiar clave de API\" y pega una nueva.";
   if (err instanceof Anthropic.PermissionDeniedError) return "Esta clave no tiene permiso para usar el modelo.";
   if (err instanceof Anthropic.RateLimitError) return "Demasiadas peticiones seguidas o sin saldo en la cuenta de API. Espera un momento.";
@@ -972,12 +1096,14 @@ function errorText(err) {
 
 async function send(text) {
   if (busy) return;
-  if (!client) { $("setup").hidden = false; $("key").focus(); addError("Primero necesito tu clave de API."); return; }
+  const brain = brainKind();
+  if (brain === "claude" && !client) { paintSetup(); $("setup").hidden = false; $("key").focus(); addError("Para usar Claude necesito tu clave de API. Con Ollama no hace falta: elígelo en Ajustes."); return; }
   input.value = ""; input.style.height = "auto"; input.classList.remove("interim");
   stopRec(); stopSpeaking();
   addMsg("Tomás", text, "me");
   turns.push({ role: "user", content: text });
-  while (turns.length > 30) turns.shift();
+  // Con Ollama en un PC modesto, menos historial = respuestas más rápidas.
+  while (turns.length > (brain === "ollama" ? 12 : 30)) turns.shift();
   while (turns.length && turns[0].role !== "user") turns.shift();
 
   const bubble = addMsg("Jarvis", "Pensando…", "her");
@@ -989,15 +1115,10 @@ async function send(text) {
   setMode("thinking");
 
   let spoken = 0, full = "", shown = "", moodSet = false;
+  const ctl = new AbortController();
+  stream = ctl;
   try {
-    stream = client.messages.stream({
-      model: MODEL,
-      max_tokens: 4096,
-      system: SYSTEM,
-      output_config: { effort: "low" },
-      messages: turns,
-    });
-    stream.on("text", (_delta, snapshot) => {
+    const onText = (snapshot) => {
       full = snapshot;
       const parsed = splitMood(snapshot);
       if (!moodSet && (parsed.mood || parsed.text)) {
@@ -1013,20 +1134,25 @@ async function send(text) {
       // Lee en voz alta cada frase en cuanto está completa.
       const m = shown.slice(spoken).match(/^[\s\S]*[.!?…](\s|$)/);
       if (m) { speakChunk(m[0]); spoken += m[0].length; }
-    });
-    const msg = await stream.finalMessage();
-    if (msg.stop_reason === "refusal") {
+    };
+    const result = brain === "ollama"
+      ? await ollamaChat(turns.slice(), onText, ctl.signal)
+      : await claudeChat(turns.slice(), onText, ctl.signal);
+    if (result.refusal) {
       bubble.remove(); stopSpeaking();
       addError("No puedo responder a eso. Prueba a decirlo de otra forma.");
       turns.pop();
     } else {
-      speakChunk(shown.slice(spoken));
-      turns.push({ role: "assistant", content: full || "…" });
+      if (!shown) { bubble.remove(); addError("El modelo no ha dado respuesta. Prueba otra vez o elige otro modelo en Ajustes."); turns.pop(); }
+      else {
+        speakChunk(shown.slice(spoken));
+        turns.push({ role: "assistant", content: full });
+      }
     }
   } catch (err) {
     out.classList.remove("pending");
     if (shown) { turns.push({ role: "assistant", content: full }); } else { bubble.remove(); turns.pop(); }
-    if (!(err instanceof Anthropic.APIUserAbortError)) addError(errorText(err));
+    if (!(err instanceof Anthropic.APIUserAbortError || err?.name === "AbortError")) addError(errorText(err));
     else stopSpeaking();
   } finally {
     avatar.thinking(false);

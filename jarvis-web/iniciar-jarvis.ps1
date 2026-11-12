@@ -1,6 +1,6 @@
 ﻿# Abre Jarvis como aplicación de escritorio en Windows.
 #
-# Sirve esta carpeta en http://localhost:8765 y abre Chrome o Edge en modo
+# Sirve esta carpeta en http://localhost:8765 y abre Edge o Chrome en modo
 # aplicación (ventana propia, sin barra de direcciones) con un perfil dedicado,
 # para que el permiso del micrófono y las claves se recuerden entre sesiones.
 # El servidor se cierra solo al cerrar la ventana de Jarvis.
@@ -39,12 +39,14 @@ if ($CrearAccesoDirecto) {
   exit 0
 }
 
+# Edge primero: trae voces femeninas naturales en español y su propio servicio de
+# reconocimiento de voz; Chrome queda como alternativa.
 $candidates = @(
+  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
   "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-  "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe",
-  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
-  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+  "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
 )
 $browser = $candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
 if (-not $browser -and -not $env:JARVIS_SIN_NAVEGADOR) {

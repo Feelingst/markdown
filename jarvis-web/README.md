@@ -2,13 +2,36 @@
 
 Asistente con voz femenina que te llama Tomás y habla en español. Escucha con el micrófono abierto de forma continua: cuando dejas de hablar envía lo que has dicho, responde en voz alta y vuelve a escuchar.
 
+**Gratis por defecto:** el "cerebro" es [Ollama](https://ollama.com), un modelo de IA que funciona en tu propio ordenador, sin internet ni coste. Opcionalmente se puede usar Claude (API de Anthropic, de pago) desde los ajustes.
+
+## Instalar Ollama (una sola vez)
+
+1. Descarga e instala Ollama desde **ollama.com** (Windows, macOS o Linux). Se queda abierto en segundo plano: en Windows verás el icono de la llama junto al reloj.
+2. Abre una terminal (en Windows, PowerShell) y descarga el modelo:
+   ```
+   ollama pull llama3.2:3b
+   ```
+   Son unos 2 GB. Cuando termine, Jarvis ya puede pensar.
+
+**Qué modelo elegir** (se cambia en **Ajustes y claves** → Modelo de Ollama):
+
+| Modelo | Tamaño aprox. | Para qué |
+|---|---|---|
+| `llama3.2:3b` | 2 GB | Opción por defecto: buen equilibrio entre rapidez y calidad en español |
+| `gemma3:1b` | 1 GB | El más rápido, para ordenadores modestos; respuestas más simples |
+| `gemma3:4b` | 3 GB | Mejor calidad, pero más lento |
+
+En un PC sin tarjeta gráfica (por ejemplo, con un Intel N150 y 16 GB de RAM) cuenta con unos segundos de espera por respuesta, más que con Claude. La primera pregunta tarda más porque el modelo se carga en memoria; después se queda cargado 30 minutos.
+
+Abre Jarvis con el lanzador (`Jarvis.bat`) y no desde un enlace de internet: Ollama solo acepta peticiones de páginas abiertas en tu propio ordenador.
+
 ## Abrir Jarvis como aplicación
 
 Descarga la carpeta `jarvis-web` completa y abre Jarvis con doble clic en el lanzador de tu sistema. Se abre en su propia ventana, sin barra de direcciones, con el icono de Jarvis.
 
 | Sistema | Lanzador | Requisitos |
 |---|---|---|
-| **Windows** | `Jarvis.bat` | Google Chrome o Microsoft Edge (Edge ya viene con Windows) |
+| **Windows** | `Jarvis.bat` | Microsoft Edge (ya viene con Windows) o Google Chrome |
 | **macOS** | `Jarvis.command` | Chrome o Edge, y `python3` |
 | **Linux** | `jarvis.sh` | Chrome, Chromium o Edge, y `python3` |
 
@@ -17,8 +40,10 @@ En Windows, `crear-acceso-directo.bat` pone un acceso directo **Jarvis** con ico
 El lanzador sirve la carpeta en `http://localhost:8765` y abre el navegador en modo aplicación con un perfil propio de Jarvis. Así el permiso del micrófono y las claves se recuerdan. Al cerrar la ventana, el servidor se cierra solo. Firefox no sirve: no tiene reconocimiento de voz.
 
 La primera vez:
-1. Pega tu clave de API de Anthropic (console.anthropic.com → API Keys). Opcionalmente, las de ElevenLabs y Simli.
+1. Comprueba que Ollama está abierto y que descargaste el modelo. Si falta algo, Jarvis te lo dice al abrirse.
 2. Pulsa **Activar micrófono** y acepta el permiso.
+
+En Windows el lanzador abre **Edge** si lo encuentra: trae voces femeninas naturales en español (Elvira, Dalia…) y su reconocimiento de voz suele funcionar en redes donde el de Chrome falla.
 
 Las claves se guardan en el perfil de la aplicación. Si antes abrías `index.html` directamente, tendrás que volver a pegarlas una vez.
 
@@ -58,7 +83,8 @@ Mientras está conectado, cada frase de ElevenLabs (audio PCM de 16 kHz) se env�
 
 ## Detalles
 
-- Modelo: `claude-sonnet-5` (constante `MODEL` en `index.html`). El uso se factura en tu cuenta de API, aparte de la suscripción de Claude.
+- Cerebro por defecto: Ollama con `llama3.2:3b` (constantes `OLLAMA_DEFAULT_MODEL` y `OLLAMA_DEFAULT_URL` en `index.html`), gratis.
+- Cerebro opcional de pago: Claude `claude-sonnet-5` (constante `MODEL`). Su uso se factura en tu cuenta de la API de Anthropic, aparte de la suscripción de Claude. ElevenLabs y Simli también son de pago.
 - Mientras Jarvis habla, el micrófono se pausa para que no se oiga a sí misma.
 - La voz depende de las voces en español instaladas en tu sistema; elige otra en la lista si la que sale no te convence.
 - La conversación no se guarda al recargar la página.
