@@ -302,7 +302,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.9.0";
+const VERSION = "0.9.1";
 const MODEL = "claude-sonnet-5";                 // cerebro "claude" (API de pago)
 const OLLAMA_DEFAULT_MODEL = "llama3.2:3b";       // cerebro "ollama" (gratis, local)
 const OLLAMA_DEFAULT_URL = "http://localhost:11434";
@@ -626,7 +626,9 @@ $("setup").onsubmit = (e) => {
   store.set("jarvis-ollama-url", $("ollamaUrl").value.trim() || null);
   store.set("jarvis-internet", $("netOn").checked ? "1" : "0");
   store.set("jarvis-city", $("city").value.trim() || null);
-  store.set("jarvis-ha-url", $("haUrl").value.trim().replace(/\/+$/, "") || null);
+  let ha = $("haUrl").value.trim().replace(/\/+$/, "");
+  if (ha && !/^https?:\/\//i.test(ha)) ha = "http://" + ha;          // "192.168.1.50:8123" también vale
+  store.set("jarvis-ha-url", ha || null);
   if ($("haToken").value.trim()) store.set("jarvis-ha-token", $("haToken").value.trim());
   $("haToken").value = "";
   if (simliKey) store.set("jarvis-simli-key", simliKey);
@@ -1065,18 +1067,29 @@ async function haConversation({ orden }) {
 }
 
 async function checkHA(report) {
-  const note = $("haNote");
+  const note = $("haNote"), url = haUrl();
   try {
-    await getJSON(haUrl() + "/api/", { headers: { Authorization: "Bearer " + store.get("jarvis-ha-token") }, signal: AbortSignal.timeout(5000) });
+    await getJSON(url + "/api/", { headers: { Authorization: "Bearer " + store.get("jarvis-ha-token") }, signal: AbortSignal.timeout(5000) });
     note.textContent = "Home Assistant conectado.";
     return true;
   } catch (e) {
-    note.textContent = e.status === 401
-      ? "Home Assistant rechaza el token. Crea uno nuevo y pégalo."
-      : `No puedo conectar con ${haUrl()}. Revisa la dirección y que Home Assistant permita a Jarvis conectarse (cors_allowed_origins, ver el README).`;
+    note.textContent = await haProblem(e);
     if (report) addError(note.textContent);
     return false;
   }
+}
+
+// Averigua por qué no conecta: token, dirección inalcanzable o permiso (CORS) de Home Assistant.
+async function haProblem(e) {
+  const url = haUrl();
+  if (e.status === 401) return "Home Assistant rechaza el token. Crea uno nuevo (perfil → Seguridad → Tokens de acceso de larga duración) y pégalo en Ajustes.";
+  if (e.status) return `Home Assistant responde con un error (${e.status}). Revisa que la dirección sea la de Home Assistant.`;
+  if (location.origin !== "http://localhost:8765") return `Jarvis está abierto desde ${location.origin === "null" ? "un archivo" : location.origin}, y Home Assistant solo admite http://localhost:8765. Abre Jarvis con Jarvis.bat o con el acceso directo del escritorio.`;
+  let reachable = false;
+  try { await fetch(url + "/manifest.json", { mode: "no-cors", signal: AbortSignal.timeout(5000) }); reachable = true; } catch {}
+  if (reachable) return `Jarvis llega a ${url}, pero Home Assistant no le deja entrar. Añade en configuration.yaml la sección http → cors_allowed_origins con http://localhost:8765 (ver el README) y reinicia Home Assistant del todo (Ajustes → Sistema → Reiniciar).`;
+  if (/\.local(:|\/|$)/.test(url)) return `No encuentro ${url}. Windows a veces no reconoce las direcciones .local: pon la IP de Home Assistant (por ejemplo http://192.168.1.50:8123; la ves en Home Assistant → Ajustes → Sistema → Red).`;
+  return `No encuentro ${url}. Revisa la dirección (http o https, IP y puerto 8123) y que el PC esté en la misma red que Home Assistant.`;
 }
 
 const WEATHER = { 0: "despejado", 1: "casi despejado", 2: "parcialmente nublado", 3: "nublado", 45: "niebla", 48: "niebla", 51: "llovizna", 53: "llovizna", 55: "llovizna intensa", 61: "lluvia débil", 63: "lluvia", 65: "lluvia fuerte", 71: "nieve débil", 73: "nieve", 75: "nieve fuerte", 80: "chubascos", 81: "chubascos", 82: "chubascos fuertes", 95: "tormenta", 96: "tormenta con granizo", 99: "tormenta con granizo" };
