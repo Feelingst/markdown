@@ -77,6 +77,29 @@ Si no conecta, Jarvis dice por qué. Lo más habitual en Windows es que no recon
 
 Lo que Home Assistant pueda hacer con Assist, Jarvis lo puede hacer por voz. Las órdenes de casa van directamente a Assist, sin pasar por el modelo. Si Assist no reconoce cómo llamas a un dispositivo, añádele un **alias** en Home Assistant (Ajustes → Asistentes de voz → Exponer → el dispositivo → Alias), por ejemplo "luz de Tomás". Si una orden no funciona, prueba a decirla con el nombre exacto del dispositivo tal como aparece en Home Assistant.
 
+## Jarvis en el iPhone (con Home Assistant)
+
+Jarvis también funciona desde el iPhone, en casa y fuera (con datos móviles), a través de Home Assistant y Home Assistant Cloud. No tiene avatar, pero habla con la misma personalidad y controla la casa.
+
+1. **Ollama accesible en la red de casa.** En PowerShell como administrador:
+   ```powershell
+   setx OLLAMA_HOST "0.0.0.0" /M
+   New-NetFirewallRule -DisplayName "Ollama (Home Assistant)" -Direction Inbound -Protocol TCP -LocalPort 11434 -RemoteAddress 192.168.1.0/24 -Action Allow
+   ```
+   Reinicia Ollama (o el PC). Comprueba que `netstat -ano | findstr 11434` muestra `0.0.0.0:11434`.
+2. **Integración Ollama en Home Assistant:** Ajustes → Dispositivos y servicios → Añadir integración → Ollama, con la URL `http://IP-DEL-PC:11434` (sin clave API). Crea un agente de conversación:
+   - nombre `Jarvis`, modelo `llama3.2:3b` y las instrucciones de personalidad;
+   - herramientas de IA sin marcar;
+   - contexto 4096, historial 10, "Mantener vivo" en -1 y "Pensar antes de responder" desactivado.
+3. **Asistente de voz:** Ajustes → Asistentes de voz → Añadir asistente "Jarvis":
+   - idioma español y agente Jarvis;
+   - **"Preferir manejar comandos localmente"** activado;
+   - voz a texto y texto a voz con Home Assistant Cloud en español de España, voz **Elvira**;
+   - márcalo como preferido.
+4. **En el iPhone:** en la app Home Assistant, botón Assist → Jarvis. Para usar **"Oye Siri, Jarvis"**, crea un atajo en la app Atajos con la acción Assist de Home Assistant.
+
+Las órdenes de casa funcionan aunque el PC esté apagado, porque las resuelve Home Assistant. Para charlar, el PC tiene que estar encendido con Ollama. Si el router cambia la IP del PC, actualiza la URL de la integración Ollama, o reserva la IP en el router.
+
 ## El avatar
 
 Mientras Jarvis habla, el avatar reacciona a lo que dice:
