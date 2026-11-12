@@ -73,6 +73,8 @@ Jarvis pasa tus órdenes de casa a **Assist**, el asistente de Home Assistant, q
    Si ya tienes una sección `http:`, añade solo las líneas de `cors_allowed_origins`. Después reinicia Home Assistant (Ajustes → Sistema → Reiniciar).
 3. **En Jarvis**, en Ajustes → Conexiones: pon la dirección de Home Assistant (normalmente `http://homeassistant.local:8123`, o la IP, por ejemplo `http://192.168.1.50:8123`) y pega el token. Al guardar, Jarvis comprueba la conexión y te dice si algo falla.
 
+Si no conecta, Jarvis dice por qué. Lo más habitual en Windows es que no reconozca `homeassistant.local`: usa la IP de Home Assistant (Ajustes → Sistema → Red, o en tu router), por ejemplo `http://192.168.1.50:8123`.
+
 Lo que Home Assistant pueda hacer con Assist, Jarvis lo puede hacer por voz. Si una orden no funciona, prueba a decirla con el nombre exacto del dispositivo tal como aparece en Home Assistant.
 
 ## El avatar
