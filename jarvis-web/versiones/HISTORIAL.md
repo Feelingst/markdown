@@ -7,7 +7,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 ---
 
 ## v0.8.0 · 2026-11-12 · Jarvis gratis con Ollama
-ENLACE_PENDIENTE
+[Descargar](https://github.com/Feelingst/markdown/archive/3c192fa1401648b58c36e4bcff6716a89078364b.zip) · [ver código](https://github.com/Feelingst/markdown/tree/3c192fa1401648b58c36e4bcff6716a89078364b) · commit `3c192fa`
 
 - El cerebro por defecto pasa a ser **Ollama**: un modelo de IA en tu propio ordenador (`llama3.2:3b` de serie), gratis y sin internet. Claude queda como opción de pago en los ajustes.
 - Ajustes nuevos: cerebro (Ollama o Claude), modelo de Ollama (con la lista de los que tienes descargados) y dirección de Ollama.
