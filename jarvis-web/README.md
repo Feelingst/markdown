@@ -64,7 +64,7 @@ Se configuran en **Ajustes y claves** → **Conexiones**. Jarvis decide solo cu�
 Jarvis pasa tus órdenes de casa a **Assist**, el asistente de Home Assistant, que ya conoce tus dispositivos y entiende español ("enciende la luz de Tomás", "¿qué temperatura hay en el salón?", "pon el robot a limpiar").
 
 1. **Crea un token:** en Home Assistant, abre tu perfil (abajo a la izquierda) → **Seguridad** → **Tokens de acceso de larga duración** → **Crear token**. Ponle de nombre "Jarvis" y copia el token, que solo se muestra una vez.
-2. **Deja que Jarvis se conecte:** añade esto al final de `configuration.yaml` (por ejemplo con el complemento **File editor**, en Ajustes → Complementos):
+2. **Deja que Jarvis se conecte.** En Home Assistant 2026.11 o posterior: Ajustes → Sistema → Red → **Servidor HTTP** → Más opciones → **Orígenes permitidos por CORS** → añade `http://localhost:8765` → Guardar → **Confirmar**. En versiones anteriores, añade esto al final de `configuration.yaml` (por ejemplo con el complemento **File editor**, en Ajustes → Complementos):
    ```yaml
    http:
      cors_allowed_origins:
@@ -75,7 +75,7 @@ Jarvis pasa tus órdenes de casa a **Assist**, el asistente de Home Assistant, q
 
 Si no conecta, Jarvis dice por qué. Lo más habitual en Windows es que no reconozca `homeassistant.local`: usa la IP de Home Assistant (Ajustes → Sistema → Red, o en tu router), por ejemplo `http://192.168.1.50:8123`.
 
-Lo que Home Assistant pueda hacer con Assist, Jarvis lo puede hacer por voz. Si una orden no funciona, prueba a decirla con el nombre exacto del dispositivo tal como aparece en Home Assistant.
+Lo que Home Assistant pueda hacer con Assist, Jarvis lo puede hacer por voz. Las órdenes de casa van directamente a Assist, sin pasar por el modelo. Si Assist no reconoce cómo llamas a un dispositivo, añádele un **alias** en Home Assistant (Ajustes → Asistentes de voz → Exponer → el dispositivo → Alias), por ejemplo "luz de Tomás". Si una orden no funciona, prueba a decirla con el nombre exacto del dispositivo tal como aparece en Home Assistant.
 
 ## El avatar
 

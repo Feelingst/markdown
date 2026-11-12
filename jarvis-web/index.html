@@ -302,7 +302,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.9.1";
+const VERSION = "0.9.2";
 const MODEL = "claude-sonnet-5";                 // cerebro "claude" (API de pago)
 const OLLAMA_DEFAULT_MODEL = "llama3.2:3b";       // cerebro "ollama" (gratis, local)
 const OLLAMA_DEFAULT_URL = "http://localhost:11434";
@@ -1066,6 +1066,30 @@ async function haConversation({ orden }) {
   return { respuesta_de_home_assistant: data?.response?.speech?.plain?.speech || "Hecho." };
 }
 
+// Frases que suenan a una orden o pregunta para la casa.
+const HOME_RE = /\b(enciende|encender|enci[eé]ndeme|apaga|apagar|ap[aá]game|sube|subir|baja|bajar|pon|poner|abre|abrir|cierra|cerrar|activa|activar|desactiva|desactivar|pausa|reanuda|aspira|limpia|luz|luces|l[aá]mpara|temperatura|calefacci[oó]n|clima|grados|tele|televisi[oó]n|homepod|m[uú]sica|volumen|robot|aspirador|lista de la compra|a[nñ]ade)\b/i;
+
+// Manda la frase tal cual a Assist de Home Assistant. Devuelve su respuesta si la ha
+// entendido, o null si no la entiende o no hay conexión (entonces responde el modelo).
+async function haDirect(text) {
+  const plain = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");                 // "Tomás" → "Tomas"
+  const variants = [text, plain, plain.replace(/\b(de|del)\s+/gi, "")];               // "luz de Tomas" → "luz Tomas"
+  for (const v of new Set(variants)) {
+    try {
+      const data = await getJSON(haUrl() + "/api/conversation/process", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + store.get("jarvis-ha-token"), "Content-Type": "application/json" },
+        body: JSON.stringify({ text: v, language: "es" }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const type = data?.response?.response_type;
+      const speech = data?.response?.speech?.plain?.speech;
+      if (type && type !== "error" && speech) return { speech, done: type === "action_done" };
+    } catch { return null; }
+  }
+  return null;
+}
+
 async function checkHA(report) {
   const note = $("haNote"), url = haUrl();
   try {
@@ -1279,6 +1303,22 @@ async function send(text) {
   clearTimeout(moodReset);
   avatar.thinking(true);
   setMode("thinking");
+
+  // Órdenes de casa: directas a Home Assistant, más fiable y rápido que el modelo pequeño.
+  if (haReady() && HOME_RE.test(text)) {
+    const ha = await haDirect(text);
+    if (ha) {
+      avatar.thinking(false);
+      avatar.setMood(ha.done ? "alegre" : "neutral");
+      out.classList.remove("pending");
+      out.textContent = ha.speech;
+      turns.push({ role: "assistant", content: ha.speech });
+      busy = false; sendBtn.textContent = "Enviar";
+      speakChunk(ha.speech);
+      if (pendingUtter === 0) afterTurn();
+      return;
+    }
+  }
 
   let spoken = 0, full = "", shown = "", moodSet = false;
   const ctl = new AbortController();

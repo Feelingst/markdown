@@ -6,6 +6,13 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.9.2 · 2026-11-12 · Órdenes de casa directas
+ENLACE_PENDIENTE
+
+- Las frases que suenan a una orden de casa ("enciende", "apaga", "luz", "temperatura", "tele", "robot"…) van directamente a Assist de Home Assistant, sin pasar por el modelo. Es más fiable con modelos pequeños, que a veces no usaban la herramienta, y más rápido.
+- Si Assist no la entiende, se reintenta sin tildes ("Tomás" → "Tomas") y sin "de" ("luz de Tomas" → "luz Tomas"). Si sigue sin entenderla, responde el modelo como siempre.
+- **Probado:** con Home Assistant y Ollama simulados: orden reconocida, orden no reconocida y charla normal.
+
 ## v0.9.1 · 2026-11-12 · Diagnóstico de Home Assistant
 [Descargar](https://github.com/Feelingst/markdown/archive/c0e9301408977f1414b0da340fdbe8fa4b8a07c9.zip) · [ver código](https://github.com/Feelingst/markdown/tree/c0e9301408977f1414b0da340fdbe8fa4b8a07c9) · commit `c0e9301`
 
