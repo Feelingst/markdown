@@ -7,7 +7,7 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 ---
 
 ## v0.9.0 · 2026-11-12 · Conexiones: casa, tiempo y Wikipedia
-ENLACE_PENDIENTE
+[Descargar](https://github.com/Feelingst/markdown/archive/53a945d9014922c1558f5c8e3d98883baab4840e.zip) · [ver código](https://github.com/Feelingst/markdown/tree/53a945d9014922c1558f5c8e3d98883baab4840e) · commit `53a945d`
 
 - **Home Assistant:** con la dirección y un token, Jarvis pasa tus órdenes de casa a Assist ("enciende la luz de Tomás", "¿qué temperatura hay en el salón?").
 - **El tiempo:** tiempo actual y previsión de 3 días con Open-Meteo, gratis y sin clave. Ajuste nuevo: tu ciudad.
