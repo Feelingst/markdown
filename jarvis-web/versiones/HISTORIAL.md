@@ -6,6 +6,13 @@ Formato del número: **X.Y.Z**. Sube **Y** cuando hay una función nueva y **Z**
 
 ---
 
+## v0.8.1 · 2026-11-12 · Arreglo del panel y voces naturales
+ENLACE_PENDIENTE
+
+- Un nombre de voz largo (por ejemplo "Microsoft Helena - Spanish (Spain)") ensanchaba el panel izquierdo y dejaba fuera los botones del micrófono y de la voz. Ahora todo cabe.
+- Elige primero las voces "Online (Natural)" de Edge, que suenan más humanas.
+- **Probado:** con nombres de voz largos, en escritorio y en móvil.
+
 ## v0.8.0 · 2026-11-12 · Jarvis gratis con Ollama
 [Descargar](https://github.com/Feelingst/markdown/archive/3c192fa1401648b58c36e4bcff6716a89078364b.zip) · [ver código](https://github.com/Feelingst/markdown/tree/3c192fa1401648b58c36e4bcff6716a89078364b) · commit `3c192fa`
 

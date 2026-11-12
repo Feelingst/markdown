@@ -46,6 +46,7 @@ body {
   gap: 16px;
 }
 .persona {
+  min-width: 0;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -85,7 +86,7 @@ body {
 }
 .status b { color: var(--gold); font-weight: 600; }
 .listening .status b { color: var(--live); }
-.controls { width: 100%; display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.controls { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
 .controls label, .setup label {
   font-family: var(--font-display); font-size: 11px; letter-spacing: .12em;
   text-transform: uppercase; color: var(--muted);
@@ -93,7 +94,7 @@ body {
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 select, button, textarea, input { font: inherit; color: inherit; }
 select, input[type="password"], input[type="text"] {
-  flex: 1; min-width: 0;
+  flex: 1 1 0; min-width: 0; max-width: 100%; text-overflow: ellipsis;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px;
 }
 .btn {
@@ -289,7 +290,7 @@ textarea:focus, select:focus, input:focus, .btn:focus-visible { outline: 2px sol
 const Anthropic = window.AnthropicSDK.default;
 
 // Versión de Jarvis: ver versiones/HISTORIAL.md
-const VERSION = "0.8.0";
+const VERSION = "0.8.1";
 const MODEL = "claude-sonnet-5";                 // cerebro "claude" (API de pago)
 const OLLAMA_DEFAULT_MODEL = "llama3.2:3b";       // cerebro "ollama" (gratis, local)
 const OLLAMA_DEFAULT_URL = "http://localhost:11434";
@@ -617,7 +618,7 @@ let voices = [], muted = store.get("jarvis-mute") === "1", pendingUtter = 0;
 function loadVoices() {
   const all = synth.getVoices();
   voices = all.filter(v => /^es/i.test(v.lang))
-    .map(v => ({ v, s: (FEMALE.test(v.name) ? 2 : 0) + (/es-ES|es-MX|es-US/i.test(v.lang) ? 1 : 0) }))
+    .map(v => ({ v, s: (FEMALE.test(v.name) ? 2 : 0) + (/es-ES|es-MX|es-US/i.test(v.lang) ? 1 : 0) + (/Natural|Online/i.test(v.name) ? 3 : 0) }))
     .sort((a, b) => b.s - a.s).map(x => x.v);
   const sel = $("voz"), saved = store.get("jarvis-voz");
   sel.innerHTML = "";
